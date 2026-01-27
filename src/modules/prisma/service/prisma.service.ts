@@ -1,0 +1,15 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '../../../generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class PrismaService extends PrismaClient {
+  constructor(readonly configService: ConfigService) {
+    const adapter = new PrismaPg({
+      connectionString: configService.get<string>('DATABASE_DEV_URL'),
+      port: 5433,
+    });
+    super({ adapter });
+  }
+}
