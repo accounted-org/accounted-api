@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
@@ -53,6 +54,7 @@ class Main {
       }),
     );
     app.use(helmet());
+    app.use(cookieParser());
   }
 }
 

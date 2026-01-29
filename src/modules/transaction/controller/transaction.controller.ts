@@ -1,6 +1,7 @@
-import { Controller, Get, Inject, Param } from '@nestjs/common';
+import { Controller, Get, Inject, Param, UseGuards } from '@nestjs/common';
 import { TRANSACTION_SERVICE } from '../tokens';
 import { type ITransactionService } from '../service';
+import { JwtAuthGuard } from 'modules/auth/guards';
 
 @Controller('transactions')
 export class TransactionController {
@@ -9,6 +10,7 @@ export class TransactionController {
     private readonly transactionService: ITransactionService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getTransactionById(@Param('id') id: string) {
     return this.transactionService.getTransactionById(id);
