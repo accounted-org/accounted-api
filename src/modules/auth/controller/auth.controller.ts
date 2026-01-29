@@ -1,7 +1,7 @@
 import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AuthService } from './../service/auth.service';
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { SignInDto } from '../dtos';
+import { SignInDto, SignUpDto } from '../dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -16,10 +16,25 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   signIn(@Body() body: SignInDto) {
-    const data = this.authService.signIn();
+    const data = this.authService.signIn(body);
     return {
       data,
       status: HttpStatus.OK,
+    };
+  }
+
+  @Post('/signup')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User signed up successfully',
+  })
+  async signUp(@Body() body: SignUpDto) {
+    const data = await this.authService.signUp(body);
+
+    return {
+      data,
+      status: HttpStatus.CREATED,
     };
   }
 }
