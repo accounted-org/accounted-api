@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 class Main {
   constructor() {
@@ -51,6 +52,7 @@ class Main {
         transform: true,
       }),
     );
+    app.use(helmet());
   }
 }
 
