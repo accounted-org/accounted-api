@@ -17,7 +17,6 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   signIn(@Body() body: SignInDto) {
     const data = this.authService.signIn();
-
     return {
       data,
       status: HttpStatus.OK,

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 
 class Main {
   constructor() {
@@ -12,8 +12,7 @@ class Main {
     const app = await NestFactory.create(AppModule);
 
     this.setupSwagger(app);
-
-    app.setGlobalPrefix(String(process.env.BASE_URL));
+    this.setupGlobalConfigs(app);
 
     app.enableCors({
       origin: '*',
@@ -42,6 +41,16 @@ class Main {
 
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     SwaggerModule.setup(String(process.env.DOCS_PREFIX), app, documentFactory);
+  }
+
+  setupGlobalConfigs(app: INestApplication) {
+    app.setGlobalPrefix(String(process.env.BASE_URL));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+      }),
+    );
   }
 }
 
