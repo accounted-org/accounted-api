@@ -3,5 +3,6 @@ import { SignUpDto } from '../dtos';
 
 export interface IUserService {
   createUser(data: SignUpDto): Promise<User>;
-  validateUserIdentity(email: string): Promise<User | null>;
+  validateUserIdentity(idOrEmail: string): Promise<User | null>;
+  incrementTokenVersion(userId: string): Promise<number>;
 }

@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
@@ -14,8 +19,8 @@ export class UserService implements IUserService {
     private readonly passwordUtils: PasswordUtils,
   ) {}
 
-  async validateUserIdentity(email: string): Promise<User | null> {
-    return await this.userRepository.findByEmail(email);
+  async validateUserIdentity(idOrEmail: string): Promise<User | null> {
+    return await this.userRepository.find(idOrEmail);
   }
 
   async createUser(data: SignUpDto) {
@@ -32,5 +37,15 @@ export class UserService implements IUserService {
     });
 
     return user;
+  }
+
+  async incrementTokenVersion(userId: string): Promise<number> {
+    const user = await this.userRepository.incrementTokenVersion(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user.tokenVersion;
   }
 }

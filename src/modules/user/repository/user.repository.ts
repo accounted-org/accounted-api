@@ -6,7 +6,6 @@ import { IUserRepository } from './user.repository.interface';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
-  // error no import do prisma, não ta injetando direito
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(data: CreateUser): Promise<User> {
@@ -18,6 +17,25 @@ export class UserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<User | null> {
     return await this.prismaService.user.findUnique({
       where: { email },
+    });
+  }
+
+  async find(idOrEmail: string): Promise<User | null> {
+    return await this.prismaService.user.findFirst({
+      where: { OR: [{ id: idOrEmail }, { email: idOrEmail }] },
+    });
+  }
+
+  async incrementTokenVersion(userId: string): Promise<User | null> {
+    return await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        tokenVersion: {
+          increment: 1,
+        },
+      },
     });
   }
 }

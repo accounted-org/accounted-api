@@ -4,6 +4,7 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Inject,
   Post,
   Req,
   Res,
@@ -14,17 +15,20 @@ import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { type Response, type Request } from 'express';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
-import { AuthService } from './../service/auth.service';
-import { SignInDto } from '../dtos';
+import { SignInRequestDto } from '../dtos';
 
 import { Public } from 'common';
-import { User } from '@types';
+import { RefreshTokenPayload, TokenPayload } from '@types';
+import { JwtAuthGuard } from '../guards';
+import { type IAuthService } from '../service';
+import { AUTH_SERVICE } from '../tokens';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
+    @Inject(AUTH_SERVICE)
+    private readonly authService: IAuthService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -35,17 +39,21 @@ export class AuthController {
     description: 'User signed in successfully',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  async signIn(@Body() body: SignInDto, @Res() res: Response) {
+  async signIn(
+    @Body() body: SignInRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const data = await this.authService.signIn(body);
 
     const isProd = this.configService.get('NODE_ENV') === 'production';
     const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
 
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       secure: isProd,
       sameSite: 'lax',
-      path: '/auth/refresh', // important
+      path, // important
       domain: cookieDomain,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
     });
@@ -57,11 +65,41 @@ export class AuthController {
     };
   }
 
+  @Post('/signout')
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User signed ou successfully',
+  })
+  @UseGuards(JwtAuthGuard)
+  async signOut(
+    @Req() req: Request & { user: TokenPayload },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
+
+    await this.authService.invalidateRefreshToken(req.user.sub);
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path, // important
+      domain: cookieDomain,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    });
+  }
+
   @Public()
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
-  async refresh(@Req() req: Request & { user: User }) {
-    const accessToken = await this.authService.refresh(req.user);
+  async refresh(@Req() req: Request & { user: RefreshTokenPayload }) {
+    const accessToken = await this.authService.refresh(
+      req.user.sub,
+      req.user.tokenVersion,
+    );
 
     return {
       data: {

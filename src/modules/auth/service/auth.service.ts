@@ -2,12 +2,13 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
-import { User } from '@types';
-import { SignInDto } from '../dtos';
+import { SignInRequestDto } from '../dtos';
 import { USER_SERVICE, type IUserService } from '../../user';
+import { SignInResponseDto } from '../dtos';
+import { IAuthService } from './auth.service.interface';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -15,7 +16,7 @@ export class AuthService {
     private readonly userService: IUserService,
   ) {}
 
-  async signIn(data: SignInDto) {
+  async signIn(data: SignInRequestDto): Promise<SignInResponseDto> {
     const user = await this.userService.validateUserIdentity(data.email);
 
     if (!user) {
@@ -32,7 +33,7 @@ export class AuthService {
     });
 
     const refreshToken = await this.jwtService.signAsync(
-      { sub: user.id },
+      { sub: user.id, tokenVersion: user.tokenVersion },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
         expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
@@ -45,9 +46,31 @@ export class AuthService {
     };
   }
 
-  async refresh(user: User) {
+  async refresh(userId: string, tokenVersion: number) {
+    const user = await this.userService.validateUserIdentity(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.tokenVersion !== tokenVersion) {
+      throw new UnauthorizedException('Refresh token invalidated');
+    }
+
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id },
+      {
+        secret: this.configService.get('JWT_SECRET'),
+        expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+      },
+    );
+
     return {
-      token: await this.jwtService.signAsync({ email: user.email }),
+      accessToken,
     };
+  }
+
+  async invalidateRefreshToken(userId: string): Promise<void> {
+    await this.userService.incrementTokenVersion(userId);
   }
 }
