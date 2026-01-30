@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { UserController } from './controller';
 import { UserService } from './service';
-import { UserRepository } from './repository/user.repository';
+import { PrismaUserPersistenceAdapter } from './repository/prisma-user.persistence-adapter';
 import { USER_REPOSITORY, USER_SERVICE } from './tokens';
 import { UserBuilder } from './user.builder';
 
@@ -10,7 +10,7 @@ import { UserBuilder } from './user.builder';
   providers: [
     {
       provide: USER_REPOSITORY,
-      useClass: UserRepository,
+      useClass: PrismaUserPersistenceAdapter,
     },
     {
       provide: USER_SERVICE,

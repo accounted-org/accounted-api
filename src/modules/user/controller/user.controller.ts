@@ -12,7 +12,7 @@ import { ApiResponse } from '@nestjs/swagger';
 import { USER_SERVICE } from '../tokens';
 import { type IUserService } from '../service';
 import { SignUpDto } from '../dtos';
-import type { Request } from '@types';
+import type { Request } from '../../../@types';
 
 @Controller('users')
 export class UserController {

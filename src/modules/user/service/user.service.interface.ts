@@ -1,4 +1,4 @@
-import { User } from '@types';
+import { User } from '../../../@types';
 import { SignUpDto } from '../dtos';
 
 export interface IUserService {

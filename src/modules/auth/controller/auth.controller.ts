@@ -13,12 +13,12 @@ import {
 
 import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { type Response } from 'express';
-import type { RefreshRequest, Request } from '@types';
+import type { RefreshRequest, Request } from '../../../@types';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
 import { SignInRequestDto } from '../dtos';
 
-import { Public } from 'common';
+import { Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
 

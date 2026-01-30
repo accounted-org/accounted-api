@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './controller';
 import { AuthService } from './service';
 import { JwtModule } from '@nestjs/jwt';
-import { StringValue } from '@types';
 import { JwtRefreshStrategy, JwtStrategy } from './strategies';
 import { ConfigService } from '@nestjs/config';
 import { UserModule } from '../user';
 import { AUTH_SERVICE } from './tokens';
+import { StringValue } from '../../@types';
 
 @Module({
   imports: [

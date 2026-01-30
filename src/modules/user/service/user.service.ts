@@ -9,7 +9,7 @@ import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
 import { SignUpDto } from '../dtos';
 import { IUserService } from './user.service.interface';
-import { User } from '@types';
+import { User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
 
 @Injectable()

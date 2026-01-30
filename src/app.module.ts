@@ -21,7 +21,11 @@ import { JwtAuthGuard } from './modules/auth';
         },
       ],
     }),
-    ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      expandVariables: true,
+      envFilePath: `.env.${process.env.NODE_ENV}`,
+    }),
     PrismaModule,
     UtilsModule,
     AuthModule,

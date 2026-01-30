@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ITransactionService } from './transaction.service.interface';
-import { Transaction } from '@types';
+import { Transaction } from '../../../@types';
 import { TRANSACTION_REPOSITORY } from '../tokens';
 import { type ITransactionRepository } from '../repository';
 
