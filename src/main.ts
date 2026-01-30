@@ -17,8 +17,9 @@ class Main {
     this.setupGlobalConfigs(app);
 
     app.enableCors({
-      origin: '*',
+      origin: process.env.CORS_ORIGIN,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
     });
 
     await app.listen(String(process.env.PORT), () => {

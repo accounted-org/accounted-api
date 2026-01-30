@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import {
-  AuthModule,
   PrismaModule,
-  TransactionModule,
   UtilsModule,
+  AuthModule,
+  TransactionModule,
+  UserModule,
 } from './modules';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -20,9 +21,10 @@ import { APP_GUARD } from '@nestjs/core';
       ],
     }),
     ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
-    UtilsModule,
     PrismaModule,
+    UtilsModule,
     AuthModule,
+    UserModule,
     TransactionModule,
   ],
   controllers: [],

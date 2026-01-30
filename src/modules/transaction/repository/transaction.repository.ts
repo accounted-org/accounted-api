@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Transaction } from '@types';
 
 import { ITransactionRepository } from './transaction.repository.interface';
-import { PrismaService } from 'modules';
+import { PrismaService } from '../../prisma';
 
 @Injectable()
 export class TransactionRepository implements ITransactionRepository {

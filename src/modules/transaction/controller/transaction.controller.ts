@@ -1,7 +1,7 @@
 import { Controller, Get, Inject, Param, UseGuards } from '@nestjs/common';
 import { TRANSACTION_SERVICE } from '../tokens';
 import { type ITransactionService } from '../service';
-import { JwtAuthGuard } from 'modules/auth/guards';
+import { JwtAuthGuard } from '../../auth';
 
 @Controller('transactions')
 export class TransactionController {
