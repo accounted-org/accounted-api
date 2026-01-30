@@ -45,9 +45,9 @@ export class AuthService {
     };
   }
 
-  refresh(user: User) {
+  async refresh(user: User) {
     return {
-      token: this.jwtService.sign({ email: user.email }),
+      token: await this.jwtService.signAsync({ email: user.email }),
     };
   }
 }

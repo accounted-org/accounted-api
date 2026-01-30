@@ -29,9 +29,9 @@ export class AuthController {
   ) {}
 
   @Post('/signin')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
+    status: HttpStatus.OK,
     description: 'User signed in successfully',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
@@ -40,14 +40,6 @@ export class AuthController {
 
     const isProd = this.configService.get('NODE_ENV') === 'production';
     const cookieDomain = this.configService.get('COOKIE_DOMAIN');
-
-    res.cookie('accessToken', data.accessToken, {
-      httpOnly: true,
-      secure: isProd, // only HTTPS
-      sameSite: 'lax',
-      domain: cookieDomain,
-      maxAge: 15 * 60 * 1000, // 15m
-    });
 
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
@@ -58,13 +50,23 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
     });
 
-    res.end();
+    return {
+      data: {
+        accessToken: data.accessToken,
+      },
+    };
   }
 
   @Public()
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
-  refresh(@Req() req: Request & { user: User }) {
-    return this.authService.refresh(req.user);
+  async refresh(@Req() req: Request & { user: User }) {
+    const accessToken = await this.authService.refresh(req.user);
+
+    return {
+      data: {
+        accessToken,
+      },
+    };
   }
 }
