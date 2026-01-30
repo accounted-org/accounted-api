@@ -5,4 +5,5 @@ export interface IUserService {
   createUser(data: SignUpDto): Promise<User>;
   validateUserIdentity(idOrEmail: string): Promise<User | null>;
   incrementTokenVersion(userId: string): Promise<number>;
+  getProfile(userId: string): Promise<Partial<User>>;
 }

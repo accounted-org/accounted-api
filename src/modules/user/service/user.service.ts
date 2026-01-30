@@ -10,6 +10,7 @@ import type { IUserRepository } from '../repository';
 import { SignUpDto } from '../dtos';
 import { IUserService } from './user.service.interface';
 import { User } from '@types';
+import { UserBuilder } from '../user.builder';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -17,6 +18,7 @@ export class UserService implements IUserService {
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
     private readonly passwordUtils: PasswordUtils,
+    private readonly userBuilder: UserBuilder,
   ) {}
 
   async validateUserIdentity(idOrEmail: string): Promise<User | null> {
@@ -47,5 +49,15 @@ export class UserService implements IUserService {
     }
 
     return user.tokenVersion;
+  }
+
+  async getProfile(userId: string): Promise<Partial<User>> {
+    const user = await this.userRepository.find(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.userBuilder.publicUser(user);
   }
 }

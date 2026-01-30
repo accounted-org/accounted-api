@@ -12,14 +12,13 @@ import {
 } from '@nestjs/common';
 
 import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { type Response, type Request } from 'express';
+import { type Response } from 'express';
+import type { RefreshRequest, Request } from '@types';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
 import { SignInRequestDto } from '../dtos';
 
 import { Public } from 'common';
-import { RefreshTokenPayload, TokenPayload } from '@types';
-import { JwtAuthGuard } from '../guards';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
 
@@ -32,6 +31,7 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Public()
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
@@ -71,9 +71,8 @@ export class AuthController {
     status: HttpStatus.OK,
     description: 'User signed ou successfully',
   })
-  @UseGuards(JwtAuthGuard)
   async signOut(
-    @Req() req: Request & { user: TokenPayload },
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const isProd = this.configService.get('NODE_ENV') === 'production';
@@ -95,16 +94,14 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
-  async refresh(@Req() req: Request & { user: RefreshTokenPayload }) {
-    const accessToken = await this.authService.refresh(
+  async refresh(@Req() req: RefreshRequest) {
+    const data = await this.authService.refresh(
       req.user.sub,
       req.user.tokenVersion,
     );
 
     return {
-      data: {
-        accessToken,
-      },
+      data,
     };
   }
 }
