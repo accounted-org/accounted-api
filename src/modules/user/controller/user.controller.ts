@@ -25,11 +25,6 @@ export class UserController {
     description: 'User signed up successfully',
   })
   async signUp(@Body() body: SignUpDto) {
-    const data = await this.userService.createUser(body);
-
-    return {
-      data,
-      status: HttpStatus.CREATED,
-    };
+    await this.userService.createUser(body);
   }
 }
