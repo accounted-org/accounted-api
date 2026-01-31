@@ -1,4 +1,5 @@
-export * from './auth';
-export * from './prisma';
-export * from './transaction';
-export * from './utils';
+export { PrismaModule } from './prisma';
+export { AuthModule } from './auth';
+export { TransactionModule } from './transaction';
+export { UserModule } from './user';
+export { UtilsModule } from './utils';

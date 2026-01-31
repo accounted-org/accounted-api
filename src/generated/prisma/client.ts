@@ -42,3 +42,8 @@ export { Prisma }
  * 
  */
 export type Transaction = Prisma.TransactionModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel

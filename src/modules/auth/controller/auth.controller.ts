@@ -1,13 +1,37 @@
+import { ConfigService } from '@nestjs/config';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+
 import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { AuthService } from './../service/auth.service';
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { SignInDto, SignUpDto } from '../dtos';
+import { type Response } from 'express';
+import type { RefreshRequest, Request } from '../../../@types';
+
+import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
+import { SignInRequestDto } from '../dtos';
+
+import { Public } from '../../../common';
+import { type IAuthService } from '../service';
+import { AUTH_SERVICE } from '../tokens';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    @Inject(AUTH_SERVICE)
+    private readonly authService: IAuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
+  @Public()
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
@@ -15,26 +39,69 @@ export class AuthController {
     description: 'User signed in successfully',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  signIn(@Body() body: SignInDto) {
-    const data = this.authService.signIn(body);
+  async signIn(
+    @Body() body: SignInRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.signIn(body);
+
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
+
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path, // important
+      domain: cookieDomain,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    });
+
     return {
-      data,
-      status: HttpStatus.OK,
+      data: {
+        accessToken: data.accessToken,
+      },
     };
   }
 
-  @Post('/signup')
-  @HttpCode(HttpStatus.CREATED)
+  @Post('/signout')
+  @HttpCode(HttpStatus.OK)
   @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'User signed up successfully',
+    status: HttpStatus.OK,
+    description: 'User signed ou successfully',
   })
-  async signUp(@Body() body: SignUpDto) {
-    const data = await this.authService.signUp(body);
+  async signOut(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
+
+    await this.authService.invalidateRefreshToken(req.user.sub);
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path, // important
+      domain: cookieDomain,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    });
+  }
+
+  @Public()
+  @Post('refresh')
+  @UseGuards(JwtRefreshGuard)
+  async refresh(@Req() req: RefreshRequest) {
+    const data = await this.authService.refresh(
+      req.user.sub,
+      req.user.tokenVersion,
+    );
 
     return {
       data,
-      status: HttpStatus.CREATED,
     };
   }
 }
