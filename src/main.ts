@@ -1,28 +1,31 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import {HttpStatus, INestApplication, Logger, ValidationPipe} from '@nestjs/common';
 import helmet from 'helmet';
 
 class Main {
+  private readonly logger = new Logger('Main')
   constructor() {
     void this.boostrap();
   }
 
   private async boostrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
     this.setupSwagger(app);
     this.setupGlobalConfigs(app);
 
     app.enableCors({
-      origin: '*',
+      origin: process.env.CORS_ORIGIN,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
     });
 
     await app.listen(String(process.env.PORT), () => {
-      console.log(`Server is running on http://localhost:${process.env.PORT}`);
-      console.log(
+      this.logger.debug(`Server is running on http://localhost:${process.env.PORT}`);
+      this.logger.debug(
         `API Documentation available at http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`,
       );
     });
@@ -53,6 +56,7 @@ class Main {
       }),
     );
     app.use(helmet());
+    app.use(cookieParser());
   }
 }
 
