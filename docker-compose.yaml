@@ -1,27 +1,49 @@
 version: '3.9'
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: postgres_prisma
-    restart: always
-    ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: nest_prisma
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+#  postgres:
+#    image: postgres:16
+#    container_name: postgres_prisma
+#    restart: always
+#    ports:
+#      - '5432:5432'
+#    environment:
+#      POSTGRES_USER: root
+#      POSTGRES_PASSWORD: rootpassword
+#      POSTGRES_DB: nest_prisma
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
 
   jaeger:
     image: jaegertracing/all-in-one
     container_name: jaeger
     restart: always
+    environment:
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+      - COLLECTOR_OTLP_ENABLED=true
     ports:
       - "16686:16686"
       - "4317:4317"
       - "4318:4318"
 
-volumes:
-  pgdata:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    restart: always
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./otelcol.config.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - "4319:4318"
+      - "8889:8889"
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+#volumes:
+#  pgdata:

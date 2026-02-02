@@ -11,7 +11,7 @@ import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const exporter = new OTLPTraceExporter({
-  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://localhost:4318/v1/traces',
+  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://localhost:4319/v1/traces',
   timeoutMillis: 15000,
 });
 

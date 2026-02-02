@@ -1,3 +1,5 @@
+import 'dotenv/config';
+import './observability/tracing.service';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
@@ -5,7 +7,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
-import './observability/tracing.service';
 
 class Main {
   constructor() {
