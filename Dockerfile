@@ -28,6 +28,8 @@ COPY --from=builder /app/src/generated ./dist/src/generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
+RUN chown -R nestjs:nodejs /app
+
 USER nestjs
 EXPOSE 3100
 ENV PORT=3100
