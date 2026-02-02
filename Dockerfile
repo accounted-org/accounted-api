@@ -27,7 +27,7 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/src/generated ./dist/src/generated
 COPY --from=builder /app/prisma ./prisma
-
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 USER nestjs
 EXPOSE 3100
