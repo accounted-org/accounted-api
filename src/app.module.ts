@@ -17,19 +17,25 @@ import { randomUUID } from 'node:crypto';
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
-        level: process.env.LOG_LEVEL || 'info',
+        level: process.env.LOG_LEVEL || 'trace',
 
         transport:
           process.env.NODE_ENV !== 'production'
             ? {
                 target: 'pino-pretty',
-                options: { singleLine: true, colorize: true },
+                options: {
+                  singleLine: true,
+                  sync: true,
+                  colorizeObjects: true,
+                  colorize: true,
+                  translateTime: 'HH:MM:ss Z',
+                  errorLikeObjectKeys: ['err', 'error'],
+                },
               }
             : undefined,
 
         genReqId: (req, res) => {
-          const id =
-            (req.headers['x-request-id'] as string) ?? crypto.randomUUID();
+          const id = (req.headers['x-request-id'] as string) ?? randomUUID();
           res.setHeader('x-request-id', id);
           return id;
         },

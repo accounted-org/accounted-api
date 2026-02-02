@@ -2,9 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import {HttpStatus, INestApplication, Logger, ValidationPipe} from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import {Logger as PLogger} from 'nestjs-pino'
+import { Logger } from 'nestjs-pino';
+import './observability/tracing.service';
 
 class Main {
   constructor() {
@@ -14,7 +15,10 @@ class Main {
   private async boostrap() {
     const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-    app.useLogger(app.get(PLogger));
+    const logger = app.get(Logger);
+    app.useLogger(logger);
+
+    app.enableShutdownHooks();
 
     this.setupSwagger(app);
     this.setupGlobalConfigs(app);
@@ -27,9 +31,15 @@ class Main {
 
     await app.listen(String(process.env.PORT));
 
-    const log = new Logger('Main');
-    log.log(`API up on http://localhost:${process.env.PORT}`);
-    log.log(`Swagger: http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`);
+    logger.log(`API up on http://localhost:${process.env.PORT}`, 'Bootstrap');
+    logger.log(
+      `Swagger: http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`,
+      'Bootstrap',
+    );
+    logger.log(
+      `Jaeger: http://localhost:16686/v1/traces`,
+      'Tracing',
+    );
   }
 
   setupSwagger(app: INestApplication) {
