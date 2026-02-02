@@ -12,7 +12,6 @@ COPY . .
 
 RUN chmod -R +x ./node_modules/.bin
 
-RUN npx prisma generate
 RUN npm run build;
 
 FROM node:20-alpine AS runner
@@ -33,4 +32,4 @@ USER nestjs
 EXPOSE 3100
 ENV PORT=3100
 
-CMD ["sh", "-c", "npx prisma migrate deploy --config ./prisma.config.ts && node dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma generate --config ./prisma.config.ts && npx prisma migrate deploy --config ./prisma.config.ts && node dist/src/main.js"]
