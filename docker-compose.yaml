@@ -1,18 +1,18 @@
 version: '3.9'
 
 services:
-#  postgres:
-#    image: postgres:16
-#    container_name: postgres_prisma
-#    restart: always
-#    ports:
-#      - '5432:5432'
-#    environment:
-#      POSTGRES_USER: root
-#      POSTGRES_PASSWORD: rootpassword
-#      POSTGRES_DB: nest_prisma
-#    volumes:
-#      - pgdata:/var/lib/postgresql/data
+  postgres:
+    image: postgres:16
+    container_name: postgres_prisma
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: nest_prisma
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
   jaeger:
     image: jaegertracing/all-in-one
@@ -51,6 +51,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
 
   grafana:
     image: grafana/grafana:latest
@@ -62,10 +63,13 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
+      - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
       - jaeger
 
-#volumes:
-#  pgdata:
+volumes:
+  pgdata:
+  prometheus_data:/prometheus:
+  grafana_data:
