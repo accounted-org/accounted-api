@@ -38,6 +38,6 @@ export class UserController {
     description: 'Returns user logged data',
   })
   async getProfile(@Req() req: Request) {
-    return await this.userService.getProfile(req.user.sub);
+    return await this.userService.getProfile(req.user?.sub);
   }
 }

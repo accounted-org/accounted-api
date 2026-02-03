@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -6,6 +6,8 @@ import { SignInRequestDto } from '../dtos';
 import { USER_SERVICE, type IUserService } from '../../user';
 import { SignInResponseDto } from '../dtos';
 import { IAuthService } from './auth.service.interface';
+import {APP_ERRORS} from "../../../@errors";
+import {AppError} from "../../../@errors/app-error";
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -20,7 +22,7 @@ export class AuthService implements IAuthService {
     const user = await this.userService.validateUserIdentity(data.email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     const payload = {
@@ -50,11 +52,11 @@ export class AuthService implements IAuthService {
     const user = await this.userService.validateUserIdentity(userId);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     if (user.tokenVersion !== tokenVersion) {
-      throw new UnauthorizedException('Refresh token invalidated');
+      throw new AppError(APP_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
     const accessToken = await this.jwtService.signAsync(

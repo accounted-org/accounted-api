@@ -1,8 +1,6 @@
 import {
-  BadRequestException,
   Inject,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
@@ -11,6 +9,8 @@ import { SignUpDto } from '../dtos';
 import { IUserService } from './user.service.interface';
 import { User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
+import {AppError} from "../../../@errors/app-error";
+import {APP_ERRORS} from "../../../@errors";
 
 @Injectable()
 export class UserService implements IUserService {
@@ -29,23 +29,21 @@ export class UserService implements IUserService {
     const userAlreadyExists = await this.userRepository.findByEmail(data.email);
 
     if (userAlreadyExists) {
-      throw new BadRequestException('User already exists');
+      throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
     }
 
-    const user = await this.userRepository.create({
+    return await this.userRepository.create({
       email: data.email,
       name: data.name,
       passwordHash: await this.passwordUtils.hashPassword(data.password),
     });
-
-    return user;
   }
 
   async incrementTokenVersion(userId: string): Promise<number> {
     const user = await this.userRepository.incrementTokenVersion(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
     }
 
     return user.tokenVersion;
@@ -55,7 +53,7 @@ export class UserService implements IUserService {
     const user = await this.userRepository.find(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
     }
 
     return this.userBuilder.publicUser(user);
