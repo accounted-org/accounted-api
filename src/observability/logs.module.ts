@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
+import { APP_FILTER } from '@nestjs/core';
+import { HttpExceptionFilter } from '../filters/http-exception.filter';
 
 @Module({
   imports: [
@@ -55,6 +57,12 @@ import { randomUUID } from 'node:crypto';
         },
       },
     }),
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
   ],
   exports: [LoggerModule],
 })
