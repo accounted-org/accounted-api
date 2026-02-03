@@ -1,18 +1,25 @@
+import 'dotenv/config';
+import './observability/tracing.service';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import {HttpStatus, INestApplication, Logger, ValidationPipe} from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
 
 class Main {
-  private readonly logger = new Logger('Main')
   constructor() {
     void this.boostrap();
   }
 
   private async boostrap() {
     const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+    const logger = app.get(Logger);
+    app.useLogger(logger);
+
+    app.enableShutdownHooks();
 
     this.setupSwagger(app);
     this.setupGlobalConfigs(app);
@@ -23,12 +30,25 @@ class Main {
       credentials: true,
     });
 
-    await app.listen(String(process.env.PORT), () => {
-      this.logger.debug(`Server is running on http://localhost:${process.env.PORT}`);
-      this.logger.debug(
-        `API Documentation available at http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`,
-      );
-    });
+    await app.listen(String(process.env.PORT));
+
+    logger.log(`API up on http://localhost:${process.env.PORT}`, 'Bootstrap');
+    logger.log(
+      `Swagger: http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`,
+      'Bootstrap',
+    );
+    logger.log(
+      `Jaeger: http://localhost:16686`,
+      'Tracing',
+    );
+    logger.log(
+      `Grafana: http://localhost:4000`,
+      'Tracing',
+    );
+    logger.log(
+      `Prometheus: http://localhost:9090`,
+      'Tracing',
+    );
   }
 
   setupSwagger(app: INestApplication) {

@@ -10,6 +10,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth';
+import { LogsModule } from './observability/logs.module';
+import { MetricsModule } from './observability/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -24,13 +26,15 @@ import { JwtAuthGuard } from './modules/auth';
     ConfigModule.forRoot({
       isGlobal: true,
       expandVariables: true,
-      envFilePath: `.env.${process.env.NODE_ENV}`,
+      envFilePath: `.env`,
     }),
     PrismaModule,
     UtilsModule,
     AuthModule,
     UserModule,
     TransactionModule,
+    MetricsModule,
+    LogsModule,
   ],
   controllers: [],
   providers: [
