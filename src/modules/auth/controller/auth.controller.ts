@@ -16,9 +16,9 @@ import { type Response } from 'express';
 import type { RefreshRequest, Request } from '../../../@types';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
-import { SignInRequestDto } from '../dtos';
+import { SignInStepOneRequestDto, SignInStepTwoRequestDto } from '../dtos';
 
-import { Public } from '../../../common';
+import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
 
@@ -32,18 +32,35 @@ export class AuthController {
   ) {}
 
   @Public()
-  @Post('/signin')
+  @UseGuards(GuestGuard)
+  @Post('/signin/step-one')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User signed in successfully',
+    description:
+      'User signed in successfully. Returns temporary token to validate MFA on step two',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  async signIn(
-    @Body() body: SignInRequestDto,
+  async signInStepOne(@Body() body: SignInStepOneRequestDto) {
+    const data = await this.authService.signInStepOne(body);
+
+    return data;
+  }
+
+  @Public()
+  @UseGuards(GuestGuard)
+  @Post('/signin/step-two')
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User signed in successfully. Returns access token',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+  async signInStepTwo(
+    @Body() body: SignInStepTwoRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.authService.signIn(body);
+    const data = await this.authService.signInStepTwo(body);
 
     const isProd = this.configService.get('NODE_ENV') === 'production';
     const cookieDomain = this.configService.get('COOKIE_DOMAIN');

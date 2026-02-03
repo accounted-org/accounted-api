@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 
-export class SignInResponseDto {
+export class SignInStepTwoResponseDto {
   @ApiProperty({
     description: 'Access token with 15m of expiration',
   })

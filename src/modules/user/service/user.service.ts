@@ -7,7 +7,7 @@ import {
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
-import { SignUpDto } from '../dtos';
+import { SignUpDto, UpdateUser } from '../dtos';
 import { IUserService } from './user.service.interface';
 import { User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
@@ -59,5 +59,27 @@ export class UserService implements IUserService {
     }
 
     return this.userBuilder.publicUser(user);
+  }
+
+  async findById(userId: string): Promise<User> {
+    const user = await this.userRepository.find(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateUser(userId: string, data: UpdateUser): Promise<User> {
+    const user = await this.userRepository.find(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.userRepository.update(userId, data);
+
+    return user;
   }
 }

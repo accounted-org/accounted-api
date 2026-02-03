@@ -4,7 +4,6 @@ import { IUserRepository } from '../repository/user.repository.interface';
 import { USER_REPOSITORY } from '../tokens';
 import { UserBuilder } from '../user.builder';
 import { UtilsModule } from '../../utils';
-import { User } from '../../../@types';
 
 describe('UserService', () => {
   let service: UserService;
@@ -16,6 +15,7 @@ describe('UserService', () => {
       findByEmail: jest.fn(),
       create: jest.fn(),
       incrementTokenVersion: jest.fn(),
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

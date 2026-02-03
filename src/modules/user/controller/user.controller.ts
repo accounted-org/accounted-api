@@ -13,6 +13,7 @@ import { USER_SERVICE } from '../tokens';
 import { type IUserService } from '../service';
 import { SignUpDto } from '../dtos';
 import type { Request } from '../../../@types';
+import { Public } from '../../../common';
 
 @Controller('users')
 export class UserController {
@@ -21,6 +22,7 @@ export class UserController {
     private readonly userService: IUserService,
   ) {}
 
+  @Public()
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiResponse({

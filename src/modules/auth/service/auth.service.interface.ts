@@ -1,8 +1,18 @@
-import { SignInRequestDto } from '../dtos/request';
-import { RefreshResponseDto, SignInResponseDto } from '../dtos/response';
+import {
+  SignInStepOneRequestDto,
+  SignInStepTwoRequestDto,
+  RefreshResponseDto,
+  SignInStepOneResponseDto,
+  SignInStepTwoResponseDto,
+} from '../dtos';
 
 export interface IAuthService {
-  signIn(dto: SignInRequestDto): Promise<SignInResponseDto>;
+  signInStepOne(
+    dto: SignInStepOneRequestDto,
+  ): Promise<SignInStepOneResponseDto>;
+  signInStepTwo(
+    dto: SignInStepTwoRequestDto,
+  ): Promise<SignInStepTwoResponseDto>;
   refresh(userId: string, tokenVersion: number): Promise<RefreshResponseDto>;
   invalidateRefreshToken(userId: string): Promise<void>;
 }
