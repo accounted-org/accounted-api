@@ -41,6 +41,10 @@ class Main {
       `Jaeger: http://localhost:16686/v1/traces`,
       'Tracing',
     );
+    logger.log(
+      `Grafana: http://localhost:4000`,
+      'Tracing',
+    );
   }
 
   setupSwagger(app: INestApplication) {

@@ -22,10 +22,17 @@ services:
       - METRICS_STORAGE_TYPE=prometheus
       - PROMETHEUS_SERVER_URL=http://prometheus:9090
       - COLLECTOR_OTLP_ENABLED=true
+    command:
+      - "--prometheus.server-url=http://prometheus:9090"
+      - "--prometheus.query.namespace=traces_span_metrics"
+      - "--prometheus.query.normalize-calls=true"
+      - "--prometheus.query.normalize-duration=true"
+      - "--prometheus.query.duration-unit=ms"
     ports:
       - "16686:16686"
       - "4317:4317"
       - "4318:4318"
+      - "14269:14269"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -44,6 +51,21 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - jaeger
 
 #volumes:
 #  pgdata:
