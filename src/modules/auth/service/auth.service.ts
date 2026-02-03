@@ -1,5 +1,5 @@
 import { PasswordUtils } from './../../utils/password.utils';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -11,6 +11,8 @@ import {
 } from '../dtos';
 import { USER_SERVICE, type IUserService } from '../../user';
 import { type IAuthService } from './auth.service.interface';
+import { APP_ERRORS } from '../../../@errors';
+import { AppError } from '../../../@errors/app-error';
 import { MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
 
@@ -32,7 +34,7 @@ export class AuthService implements IAuthService {
     const user = await this.userService.validateUserIdentity(data.email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     const passwordsMatch = await this.passwordUtils.comparePassword(
@@ -41,7 +43,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!passwordsMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     const tempToken = await this.jwtService.signAsync(
@@ -65,7 +67,7 @@ export class AuthService implements IAuthService {
       await this.jwtService.verifyAsync(dto.tempToken);
 
     if (!tempTokenPayload || !tempTokenPayload.mfaPending) {
-      throw new UnauthorizedException();
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     const user = await this.userService.validateUserIdentity(
@@ -73,7 +75,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     await this.mfaService.validateMfa(tempTokenPayload.sub, dto.code);
@@ -105,11 +107,11 @@ export class AuthService implements IAuthService {
     const user = await this.userService.validateUserIdentity(userId);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
     if (user.tokenVersion !== tokenVersion) {
-      throw new UnauthorizedException('Refresh token invalidated');
+      throw new AppError(APP_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
     const accessToken = await this.jwtService.signAsync(

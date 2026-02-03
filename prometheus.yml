@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 2m
+
+scrape_configs:
+  - job_name: "accounted-api"
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets:
+          - "host.docker.internal:3100" # Diferente em prod ["api:3100"]
+
+  - job_name: "jaeger-spanmetrics"
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "otel-collector:8889"
