@@ -38,11 +38,15 @@ class Main {
       'Bootstrap',
     );
     logger.log(
-      `Jaeger: http://localhost:16686/v1/traces`,
+      `Jaeger: http://localhost:16686`,
       'Tracing',
     );
     logger.log(
       `Grafana: http://localhost:4000`,
+      'Tracing',
+    );
+    logger.log(
+      `Prometheus: http://localhost:9090`,
       'Tracing',
     );
   }

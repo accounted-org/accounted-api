@@ -41,6 +41,9 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+otelcol.config.yml
+prometheus.yml
+grafana
 
 # temp directory
 .temp

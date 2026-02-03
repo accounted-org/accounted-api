@@ -7,3 +7,6 @@ docker-compose.yml
 .env
 .env.*
 npm-debug.log*
+otelcol.config.yml
+prometheus.yml
+grafana
