@@ -15,6 +15,7 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
+import { Providers } from '../../../@types';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -34,10 +35,10 @@ export class AuthService implements IAuthService {
     let user = await this.userService.findByEmail(email).catch(console.log);
 
     if (!user) {
-      user = await this.userService.createUser({
+      user = await this.userService.createProviderUser({
         email: googleUser.email,
         name: googleUser.firstName,
-        password: '',
+        provider: Providers.GOOGLE,
       });
     }
 
@@ -72,6 +73,10 @@ export class AuthService implements IAuthService {
 
     if (!user) {
       throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
+    }
+
+    if (!user.passwordHash) {
+      throw new AppError(APP_ERRORS.INVALID_LOGIN_PROVIDER);
     }
 
     const passwordsMatch = await this.passwordUtils.comparePassword(

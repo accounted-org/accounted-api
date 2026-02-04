@@ -134,7 +134,29 @@ export class AuthController {
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleCallback(@Req() req) {
-    return await this.authService.googleLogin(req.user);
+  async googleCallback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.googleLogin(req.user);
+
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
+
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path, // important
+      domain: cookieDomain,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    });
+
+    return {
+      data: {
+        accessToken: data.accessToken,
+      },
+    };
   }
 }

@@ -1,8 +1,9 @@
 import { User } from '../../../@types';
-import { SignUpDto, UpdateUser } from '../dtos';
+import { CreateUser, SignUpDto, UpdateUser } from '../dtos';
 
 export interface IUserService {
   createUser(data: SignUpDto): Promise<User>;
+  createProviderUser(data: CreateUser): Promise<User>;
   validateUserIdentity(idOrEmail: string): Promise<User | null>;
   incrementTokenVersion(userId: string): Promise<number>;
   getProfile(userId: string): Promise<Partial<User>>;

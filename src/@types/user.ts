@@ -5,7 +5,8 @@ export type User = {
   tokenVersion: number;
   mfaEnabled: boolean;
   mfaSecret: string | null;
-  passwordHash: string;
+  passwordHash: string | null;
+  provider: string;
   createdAt: Date;
   updatedAt: Date;
 };
