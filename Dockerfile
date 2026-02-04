@@ -7,13 +7,12 @@ COPY package.json package-lock.json* ./
 RUN npm ci;
 
 FROM base AS builder
-ARG DATABASE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN chmod -R +x ./node_modules/.bin
 
-RUN npx prisma generate --config ./prisma.config.ts
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate --config ./prisma.config.ts
 
 RUN npm run build;
 
