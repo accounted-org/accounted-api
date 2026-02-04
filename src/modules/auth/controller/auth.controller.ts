@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -21,6 +22,7 @@ import { SignInStepOneRequestDto, SignInStepTwoRequestDto } from '../dtos';
 import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
+import { GoogleAuthGuard } from '../guards/google-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -120,5 +122,19 @@ export class AuthController {
     return {
       data,
     };
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // só redireciona para o Google
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req) {
+    return await this.authService.googleLogin(req.user);
   }
 }

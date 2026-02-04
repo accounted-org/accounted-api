@@ -15,4 +15,5 @@ export interface IAuthService {
   ): Promise<SignInStepTwoResponseDto>;
   refresh(userId: string, tokenVersion: number): Promise<RefreshResponseDto>;
   invalidateRefreshToken(userId: string): Promise<void>;
+  googleLogin(googleUser: unknown): Promise<{ accessToken: string }>;
 }

@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserModule } from '../user';
 import { AUTH_SERVICE, MFA_SERVICE } from './tokens';
 import { StringValue } from '../../@types';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { StringValue } from '../../@types';
     },
     JwtStrategy,
     JwtRefreshStrategy,
+    GoogleStrategy,
   ],
 })
 export class AuthModule {}

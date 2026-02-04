@@ -28,6 +28,43 @@ export class AuthService implements IAuthService {
     private readonly passwordUtils: PasswordUtils,
   ) {}
 
+  async googleLogin(googleUser: any) {
+    const { email }: { email: string } = googleUser;
+
+    let user = await this.userService.findByEmail(email).catch(console.log);
+
+    if (!user) {
+      user = await this.userService.createUser({
+        email: googleUser.email,
+        name: googleUser.firstName,
+        password: '',
+      });
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+    });
+
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: user.id, tokenVersion: user.tokenVersion },
+      {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
+      },
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
   async signInStepOne(
     data: SignInStepOneRequestDto,
   ): Promise<SignInStepOneResponseDto> {
