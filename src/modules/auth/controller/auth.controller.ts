@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -16,11 +17,12 @@ import { type Response } from 'express';
 import type { RefreshRequest, Request } from '../../../@types';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
-import { SignInRequestDto } from '../dtos';
+import { SignInStepOneRequestDto, SignInStepTwoRequestDto } from '../dtos';
 
-import { Public } from '../../../common';
+import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
+import { GoogleAuthGuard } from '../guards/google-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -32,18 +34,35 @@ export class AuthController {
   ) {}
 
   @Public()
-  @Post('/signin')
+  @UseGuards(GuestGuard)
+  @Post('/signin/step-one')
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User signed in successfully',
+    description:
+      'User signed in successfully. Returns temporary token to validate MFA on step two',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  async signIn(
-    @Body() body: SignInRequestDto,
+  async signInStepOne(@Body() body: SignInStepOneRequestDto) {
+    const data = await this.authService.signInStepOne(body);
+
+    return data;
+  }
+
+  @Public()
+  @UseGuards(GuestGuard)
+  @Post('/signin/step-two')
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User signed in successfully. Returns access token',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+  async signInStepTwo(
+    @Body() body: SignInStepTwoRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.authService.signIn(body);
+    const data = await this.authService.signInStepTwo(body);
 
     const isProd = this.configService.get('NODE_ENV') === 'production';
     const cookieDomain = this.configService.get('COOKIE_DOMAIN');
@@ -102,6 +121,42 @@ export class AuthController {
 
     return {
       data,
+    };
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // só redireciona para o Google
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.googleLogin(req.user);
+
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const cookieDomain = this.configService.get('COOKIE_DOMAIN');
+    const path = `/${String(this.configService.get('BASE_URL'))}/auth/refresh`;
+
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path, // important
+      domain: cookieDomain,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    });
+
+    return {
+      data: {
+        accessToken: data.accessToken,
+      },
     };
   }
 }

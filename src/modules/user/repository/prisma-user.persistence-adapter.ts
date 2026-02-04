@@ -1,6 +1,6 @@
 import { PrismaService } from '../../prisma';
 import { Injectable } from '@nestjs/common';
-import { CreateUser } from '../dtos';
+import { CreateUser, UpdateUser } from '../dtos';
 import { User } from '../../../@types';
 import { IUserRepository } from './user.repository.interface';
 
@@ -10,7 +10,10 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
 
   async create(data: CreateUser): Promise<User> {
     return await this.prismaService.user.create({
-      data,
+      data: {
+        ...data,
+        mfaEnabled: false,
+      },
     });
   }
 
@@ -36,6 +39,15 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
           increment: 1,
         },
       },
+    });
+  }
+
+  async update(userId: string, data: UpdateUser): Promise<User | null> {
+    return await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data,
     });
   }
 }
