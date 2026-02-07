@@ -5,15 +5,12 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
-  Post,
   Req,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
 import { USER_SERVICE } from '../tokens';
 import { type IUserService } from '../service';
-import { SignUpDto } from '../dtos';
 import type { Request } from '../../../@types';
-import { Public } from '../../../common';
 
 @Controller('users')
 export class UserController {
@@ -21,17 +18,6 @@ export class UserController {
     @Inject(USER_SERVICE)
     private readonly userService: IUserService,
   ) {}
-
-  @Public()
-  @Post('/signup')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'User signed up successfully',
-  })
-  async signUp(@Body() body: SignUpDto) {
-    await this.userService.createUser(body);
-  }
 
   @Get('/profile')
   @HttpCode(HttpStatus.OK)

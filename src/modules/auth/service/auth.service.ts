@@ -15,7 +15,10 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
-import { Providers } from '../../../@types';
+import { Lang, Providers, User } from '../../../@types';
+import { SignUpDto } from '../../user/dtos';
+import { EMAIL_SERVICE, type IEmailService } from '../../email';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -26,8 +29,15 @@ export class AuthService implements IAuthService {
     private readonly userService: IUserService,
     @Inject(MFA_SERVICE)
     private readonly mfaService: IMfaService,
+    @Inject(EMAIL_SERVICE)
+    private readonly emaillService: IEmailService,
     private readonly passwordUtils: PasswordUtils,
+    @InjectPinoLogger('AuthService') private readonly logger: PinoLogger,
   ) {}
+
+  async createUser(dto: SignUpDto): Promise<User> {
+    return await this.userService.createUser(dto);
+  }
 
   async googleLogin(googleUser: any) {
     const { email }: { email: string } = googleUser;
@@ -171,5 +181,69 @@ export class AuthService implements IAuthService {
 
   async invalidateRefreshToken(userId: string): Promise<void> {
     await this.userService.incrementTokenVersion(userId);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      const user = await this.userService.findByEmail(email);
+
+      if (user.provider !== Providers.INTERN.toString()) {
+        this.logger.info('[forgotPassword]: User provider not allowed');
+
+        return;
+      }
+
+      this.logger.info('[forgotPassword]: Recovery link sent');
+
+      const redefinePasswordToken = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          // colocar em algum canto pra nao ficar magic string
+          type: 'password-reset',
+        },
+        {
+          secret: this.configService.get('JWT_RESET_SECRET'),
+          expiresIn: this.configService.get('JWT_RESET_EXPIRES_IN'),
+        },
+      );
+
+      const redefinePasswordLink = `${this.configService.get('FRONT_RESET_PASSWORD_URL'.replace('<lang>', user.preferredLanguage ?? Lang.PT_BR))}?token=${redefinePasswordToken}`;
+
+      await this.emaillService.sendForgotPasswordEmail(
+        user,
+        redefinePasswordLink,
+      );
+    } catch {
+      this.logger.info(
+        `[forgotPassword]: User with email '${email}' not found`,
+      );
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      const tokenPayload: { sub: string; type: string } =
+        await this.jwtService.verifyAsync(token, {
+          secret: this.configService.get('JWT_RESET_SECRET'),
+        });
+
+      if (!tokenPayload || tokenPayload.type !== 'password-reset') {
+        throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
+      }
+
+      const user = await this.userService.findById(tokenPayload.sub);
+
+      if (!user) {
+        throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
+      }
+
+      const passwordHash = await this.passwordUtils.hashPassword(newPassword);
+
+      await this.userService.updateUser(user.id, {
+        passwordHash,
+      });
+    } catch {
+      throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
+    }
   }
 }

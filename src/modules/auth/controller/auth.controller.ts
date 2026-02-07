@@ -17,12 +17,18 @@ import { type Response } from 'express';
 import type { RefreshRequest, Request } from '../../../@types';
 
 import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
-import { SignInStepOneRequestDto, SignInStepTwoRequestDto } from '../dtos';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  SignInStepOneRequestDto,
+  SignInStepTwoRequestDto,
+} from '../dtos';
 
 import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
+import { SignUpDto } from '../../user/dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -32,6 +38,17 @@ export class AuthController {
     private readonly authService: IAuthService,
     private readonly configService: ConfigService,
   ) {}
+
+  @Public()
+  @Post('/signup')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User signed up successfully',
+  })
+  async signUp(@Body() body: SignUpDto) {
+    await this.authService.createUser(body);
+  }
 
   @Public()
   @UseGuards(GuestGuard)
@@ -158,5 +175,19 @@ export class AuthController {
         accessToken: data.accessToken,
       },
     };
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassowrd(@Body() dto: ForgotPasswordDto) {
+    void this.authService.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
   }
 }
