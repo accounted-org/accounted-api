@@ -4,6 +4,7 @@ export type User = {
   name: string;
   tokenVersion: number;
   mfaEnabled: boolean;
+  preferredLanguage: string | null;
   mfaSecret: string | null;
   passwordHash: string | null;
   provider: string;

@@ -19,14 +19,15 @@ model Transaction {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String?
-  provider     String
-  tokenVersion Int      @default(0)
-  mfaEnabled   Boolean
-  mfaSecret    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  passwordHash      String?
+  preferredLanguage String?
+  provider          String
+  tokenVersion      Int      @default(0)
+  mfaEnabled        Boolean
+  mfaSecret         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

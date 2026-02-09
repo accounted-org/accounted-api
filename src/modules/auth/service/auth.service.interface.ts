@@ -1,3 +1,5 @@
+import { User } from '../../../@types';
+import { SignUpDto } from '../../user/dtos';
 import {
   SignInStepOneRequestDto,
   SignInStepTwoRequestDto,
@@ -16,4 +18,7 @@ export interface IAuthService {
   refresh(userId: string, tokenVersion: number): Promise<RefreshResponseDto>;
   invalidateRefreshToken(userId: string): Promise<void>;
   googleLogin(googleUser: unknown): Promise<SignInStepTwoResponseDto>;
+  createUser(dto: SignUpDto): Promise<User>;
+  forgotPassword(email: string): Promise<void>;
+  resetPassword(token: string, newPassword: string): Promise<void>;
 }
