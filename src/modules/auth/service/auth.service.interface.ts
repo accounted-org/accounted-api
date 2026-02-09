@@ -1,5 +1,5 @@
 import { User } from '../../../@types';
-import { SignUpDto } from '../../user/dtos';
+import { SignUpDto } from '../dtos';
 import {
   SignInStepOneRequestDto,
   SignInStepTwoRequestDto,

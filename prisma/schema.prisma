@@ -20,11 +20,12 @@ model Transaction {
 
 model User {
   id                String   @id @default(cuid())
-  email             String   @unique
+  email             String   
   name              String
   passwordHash      String?
   preferredLanguage String?
   provider          String
+  active            Boolean  @default(true)
   tokenVersion      Int      @default(0)
   mfaEnabled        Boolean
   mfaSecret         String?

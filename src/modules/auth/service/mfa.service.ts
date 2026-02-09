@@ -40,7 +40,7 @@ export class MfaService implements IMfaService {
       length: 32,
     });
 
-    await this.userService.updateUser(user.id, {
+    await this.userService.updateUserIntern(user.id, {
       mfaSecret: secret.base32,
     });
 
@@ -80,7 +80,7 @@ export class MfaService implements IMfaService {
       throw new UnauthorizedException('Invalid code');
     }
 
-    await this.userService.updateUser(user.id, {
+    await this.userService.updateUserIntern(user.id, {
       mfaEnabled: true,
     });
 

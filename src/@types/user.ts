@@ -1,13 +1,20 @@
-export type User = {
+export type UserIntern = {
+  id: string;
+  passwordHash: string | null;
+  mfaSecret: string | null;
+  tokenVersion: number;
+  mfaEnabled: boolean;
+  active: boolean;
+  provider: string;
+};
+
+export type PublicUser = {
   id: string;
   email: string;
   name: string;
-  tokenVersion: number;
-  mfaEnabled: boolean;
   preferredLanguage: string | null;
-  mfaSecret: string | null;
-  passwordHash: string | null;
-  provider: string;
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type User = PublicUser & UserIntern;

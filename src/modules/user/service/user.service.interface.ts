@@ -1,5 +1,6 @@
-import { User } from '../../../@types';
-import { CreateUser, SignUpDto, UpdateUser } from '../dtos';
+import { PublicUser, User } from '../../../@types';
+import { SignUpDto } from '../../auth';
+import { CreateUser, UpdateUserDto, UpdateUser } from '../dtos';
 
 export interface IUserService {
   createUser(data: SignUpDto): Promise<User>;
@@ -9,5 +10,7 @@ export interface IUserService {
   getProfile(userId: string): Promise<Partial<User>>;
   findById(userId: string): Promise<User>;
   findByEmail(userId: string): Promise<User>;
-  updateUser(userId: string, data: UpdateUser): Promise<User>;
+  updateUserIntern(userId: string, data: UpdateUser): Promise<User>;
+  updateUser(userId: string, data: UpdateUserDto): Promise<PublicUser>;
+  deleteUser(userId: string): Promise<void>;
 }

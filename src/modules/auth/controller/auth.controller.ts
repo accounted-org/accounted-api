@@ -22,13 +22,13 @@ import {
   ResetPasswordDto,
   SignInStepOneRequestDto,
   SignInStepTwoRequestDto,
+  SignUpDto,
 } from '../dtos';
 
 import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
-import { SignUpDto } from '../../user/dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')

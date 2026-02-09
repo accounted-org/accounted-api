@@ -8,6 +8,7 @@ import {
   SignInStepOneResponseDto,
   SignInStepTwoRequestDto,
   SignInStepTwoResponseDto,
+  SignUpDto,
 } from '../dtos';
 import { USER_SERVICE, type IUserService } from '../../user';
 import { type IAuthService } from './auth.service.interface';
@@ -16,7 +17,6 @@ import { AppError } from '../../../@errors/app-error';
 import { MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
 import { Lang, Providers, User } from '../../../@types';
-import { SignUpDto } from '../../user/dtos';
 import { EMAIL_SERVICE, type IEmailService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
@@ -239,7 +239,7 @@ export class AuthService implements IAuthService {
 
       const passwordHash = await this.passwordUtils.hashPassword(newPassword);
 
-      await this.userService.updateUser(user.id, {
+      await this.userService.updateUserIntern(user.id, {
         passwordHash,
       });
     } catch {

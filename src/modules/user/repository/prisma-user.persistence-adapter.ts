@@ -18,14 +18,14 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return await this.prismaService.user.findUnique({
-      where: { email },
+    return await this.prismaService.user.findFirst({
+      where: { email, active: true },
     });
   }
 
   async find(idOrEmail: string): Promise<User | null> {
     return await this.prismaService.user.findFirst({
-      where: { OR: [{ id: idOrEmail }, { email: idOrEmail }] },
+      where: { OR: [{ id: idOrEmail }, { email: idOrEmail }], active: true },
     });
   }
 
@@ -48,6 +48,17 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
         id: userId,
       },
       data,
+    });
+  }
+
+  async delete(userId: string): Promise<User | null> {
+    return await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        active: false,
+      },
     });
   }
 }
