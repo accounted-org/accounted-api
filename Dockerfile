@@ -14,6 +14,8 @@ RUN chmod -R +x ./node_modules/.bin
 
 RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate --config ./prisma.config.ts
 
+RUN npm run prebuild;
+
 RUN npm run build;
 
 FROM node:20-alpine AS runner
