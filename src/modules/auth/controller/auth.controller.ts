@@ -26,6 +26,7 @@ import {
   SignUpDto,
   UpdateEmailConfirmDto,
   UpdateEmailRequestDto,
+  UpdatePasswordDto,
 } from '../dtos';
 
 import { type IAuthService } from '../service';
@@ -202,6 +203,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @RequireRecentMfa(MFA_5_MINUTES)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Patch('update-password')
+  @HttpCode(HttpStatus.OK)
+  async updatePassword(@Req() req: Request, @Body() dto: UpdatePasswordDto) {
+    return await this.authService.updatePassword(req.user.sub, dto);
   }
 
   @RequireRecentMfa(MFA_5_MINUTES)

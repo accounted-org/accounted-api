@@ -42,12 +42,19 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
     });
   }
 
-  async update(userId: string, data: UpdateUser): Promise<User | null> {
+  async update(
+    userId: string,
+    data: UpdateUser,
+    revokeSession?: boolean,
+  ): Promise<User | null> {
     return await this.prismaService.user.update({
       where: {
         id: userId,
       },
-      data,
+      data: {
+        ...data,
+        tokenVersion: revokeSession ? { increment: 1 } : undefined,
+      },
     });
   }
 

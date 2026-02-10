@@ -9,6 +9,7 @@ import {
   SignInStepTwoRequestDto,
   SignInStepTwoResponseDto,
   SignUpDto,
+  UpdatePasswordDto,
 } from '../dtos';
 import { USER_SERVICE, type IUserService } from '../../user';
 import { type IAuthService } from './auth.service.interface';
@@ -250,12 +251,49 @@ export class AuthService implements IAuthService {
 
       const passwordHash = await this.passwordUtils.hashPassword(newPassword);
 
-      await this.userService.updateUserIntern(user.id, {
-        passwordHash,
-      });
+      await this.userService.updateUserIntern(
+        user.id,
+        {
+          passwordHash,
+        },
+        true,
+      );
     } catch {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
+  }
+
+  async updatePassword(userId: string, dto: UpdatePasswordDto): Promise<void> {
+    const user = await this.userService.findById(userId);
+
+    if (user.provider !== Providers.INTERN.toString() || !user.passwordHash) {
+      throw new AppError(APP_ERRORS.INVALID_PROVIDER);
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new AppError(APP_ERRORS.PASSWORDS_CANNOT_BE_EQUAL);
+    }
+
+    const validPass = await this.passwordUtils.comparePassword(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!validPass) {
+      throw new AppError(APP_ERRORS.PASSWORDS_DOES_NOT_MATCH);
+    }
+
+    const passwordHash = await this.passwordUtils.hashPassword(dto.newPassword);
+
+    await this.userService.updateUserIntern(
+      user.id,
+      {
+        passwordHash,
+      },
+      true,
+    );
+
+    await this.emaillService.sendPasswordChangedEmail(user);
   }
 
   async requestUpdateEmail(userId: string, email: string): Promise<void> {

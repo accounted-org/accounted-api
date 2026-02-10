@@ -8,3 +8,4 @@ export { SignUpDto } from './signup.dto';
 export { UpdateEmailRequestDto } from './update-email-request.dto';
 export { UpdateEmailConfirmDto } from './update-email-confirm.dto';
 export { VerifyMfaDto } from './verify-mfa.dto';
+export { UpdatePasswordDto } from './update-password.dto';

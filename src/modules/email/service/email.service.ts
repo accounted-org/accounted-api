@@ -102,4 +102,30 @@ export class EmailService implements IEmailService {
       return false;
     }
   }
+
+  async sendPasswordChangedEmail(user: User): Promise<boolean> {
+    try {
+      await this.emailProvider.send({
+        to: user.email,
+        // to-do: mover subject para mapper file
+        subject: 'Alteração de senha - Accounted',
+        html: this.emailTemplateService.render(
+          'password-changed.template',
+          user?.preferredLanguage ?? Lang.PT_BR,
+          {
+            name: user.name,
+            appName: this.configService.get('APP_NAME'),
+            year: new Date().getFullYear(),
+            // to-do: atualizar aqu depois de criar o módulo de security-events
+            changedAt: new Date().toLocaleDateString(),
+            ipAddress: '127.0.0.1',
+            userAgent: 'Opera GX',
+          },
+        ),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

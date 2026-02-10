@@ -13,4 +13,5 @@ export interface IEmailService {
     oldEmail: string,
     newEmail: string,
   ): Promise<boolean>;
+  sendPasswordChangedEmail(user: User): Promise<boolean>;
 }

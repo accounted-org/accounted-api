@@ -11,7 +11,11 @@ export interface IUserService {
   findById(userId: string): Promise<User>;
   findByEmail(userId: string): Promise<User>;
   safeFind(idOrEmail: string): Promise<User | null>;
-  updateUserIntern(userId: string, data: UpdateUser): Promise<User>;
+  updateUserIntern(
+    userId: string,
+    data: UpdateUser,
+    revokeSession?: boolean,
+  ): Promise<User>;
   updateUser(userId: string, data: UpdateUserDto): Promise<PublicUser>;
   deleteUser(userId: string): Promise<void>;
 }
