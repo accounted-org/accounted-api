@@ -1,12 +1,16 @@
+// to-do: usar essa separação de intern e public para criar dois models separados no prisma: user e auth
+
 export type UserIntern = {
   id: string;
   passwordHash: string | null;
-  mfaSecret: string | null;
   tokenVersion: number;
-  mfaEnabled: boolean;
   active: boolean;
   provider: string;
+
+  mfaSecret: string | null;
+  mfaEnabled: boolean;
   mfaLastVerifiedAt: Date | null;
+
   emailChangeRequestedAt: Date | null;
 };
 

@@ -65,6 +65,7 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
       },
       data: {
         active: false,
+        email: `deleted_${userId}@deleted.local`,
       },
     });
   }
