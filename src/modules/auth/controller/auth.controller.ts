@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Patch,
   Post,
   Req,
   Res,
@@ -16,19 +17,27 @@ import { ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { type Response } from 'express';
 import type { RefreshRequest, Request } from '../../../@types';
 
-import { JwtRefreshGuard } from '../guards/jwt-refresh-auth.guard';
+import { JwtRefreshGuard, GoogleAuthGuard, GuestGuard } from '../guards';
 import {
   ForgotPasswordDto,
   ResetPasswordDto,
   SignInStepOneRequestDto,
   SignInStepTwoRequestDto,
   SignUpDto,
+  UpdateEmailConfirmDto,
+  UpdateEmailRequestDto,
 } from '../dtos';
 
-import { GuestGuard, Public } from '../../../common';
 import { type IAuthService } from '../service';
 import { AUTH_SERVICE } from '../tokens';
-import { GoogleAuthGuard } from '../guards/google-auth.guard';
+
+import { Throttle } from '@nestjs/throttler';
+import {
+  MFA_5_MINUTES,
+  Public,
+  RequireRecentMfa,
+  SkipMfaSession,
+} from '../decorators';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -40,6 +49,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @SkipMfaSession()
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiResponse({
@@ -51,6 +61,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipMfaSession()
   @UseGuards(GuestGuard)
   @Post('/signin/step-one')
   @HttpCode(HttpStatus.OK)
@@ -67,6 +78,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipMfaSession()
   @UseGuards(GuestGuard)
   @Post('/signin/step-two')
   @HttpCode(HttpStatus.OK)
@@ -128,20 +140,16 @@ export class AuthController {
   }
 
   @Public()
+  @SkipMfaSession()
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
   async refresh(@Req() req: RefreshRequest) {
-    const data = await this.authService.refresh(
-      req.user.sub,
-      req.user.tokenVersion,
-    );
-
-    return {
-      data,
-    };
+    return await this.authService.refresh(req.user.sub, req.user.tokenVersion);
   }
 
   @Public()
+  @SkipMfaSession()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth() {
@@ -149,6 +157,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipMfaSession()
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleCallback(
@@ -177,17 +186,39 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Public()
+  @SkipMfaSession()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   forgotPassowrd(@Body() dto: ForgotPasswordDto) {
     void this.authService.forgotPassword(dto.email);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Public()
+  @SkipMfaSession()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @RequireRecentMfa(MFA_5_MINUTES)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Patch('update-email/request')
+  @HttpCode(HttpStatus.OK)
+  async updateEmailRequest(
+    @Req() req: Request,
+    @Body() dto: UpdateEmailRequestDto,
+  ) {
+    return await this.authService.requestUpdateEmail(req.user.sub, dto.email);
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Patch('update-email/confirm')
+  @HttpCode(HttpStatus.OK)
+  async updateEmailConfirm(@Body() dto: UpdateEmailConfirmDto) {
+    return await this.authService.confirmUpdateEmail(dto.token);
   }
 }

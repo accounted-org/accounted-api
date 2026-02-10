@@ -6,4 +6,6 @@ export type UpdateUser = {
   passwordHash?: string;
   mfaEnabled?: boolean;
   mfaSecret?: string | null;
+  mfaLastVerifiedAt?: Date | null;
+  emailChangeRequestedAt?: Date | null;
 };

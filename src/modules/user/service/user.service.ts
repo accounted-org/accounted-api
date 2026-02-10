@@ -88,6 +88,16 @@ export class UserService implements IUserService {
     return user;
   }
 
+  async safeFind(idOrEmail: string) {
+    const user = await this.userRepository.find(idOrEmail);
+
+    if (!user) {
+      return null;
+    }
+
+    return user;
+  }
+
   async updateUserIntern(userId: string, data: UpdateUser): Promise<User> {
     const user = await this.findById(userId);
 

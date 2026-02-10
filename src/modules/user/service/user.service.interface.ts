@@ -10,6 +10,7 @@ export interface IUserService {
   getProfile(userId: string): Promise<Partial<User>>;
   findById(userId: string): Promise<User>;
   findByEmail(userId: string): Promise<User>;
+  safeFind(idOrEmail: string): Promise<User | null>;
   updateUserIntern(userId: string, data: UpdateUser): Promise<User>;
   updateUser(userId: string, data: UpdateUserDto): Promise<PublicUser>;
   deleteUser(userId: string): Promise<void>;

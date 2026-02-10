@@ -6,6 +6,8 @@ export type UserIntern = {
   mfaEnabled: boolean;
   active: boolean;
   provider: string;
+  mfaLastVerifiedAt: Date | null;
+  emailChangeRequestedAt: Date | null;
 };
 
 export type PublicUser = {

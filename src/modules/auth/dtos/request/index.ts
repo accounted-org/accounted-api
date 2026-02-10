@@ -5,3 +5,6 @@ export { GenerateMfaRequestDto } from './generate-mfa.request.dto';
 export { ForgotPasswordDto } from './forgot-password.dto';
 export { ResetPasswordDto } from './reset-password.dto';
 export { SignUpDto } from './signup.dto';
+export { UpdateEmailRequestDto } from './update-email-request.dto';
+export { UpdateEmailConfirmDto } from './update-email-confirm.dto';
+export { VerifyMfaDto } from './verify-mfa.dto';

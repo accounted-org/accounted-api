@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Inject, Injectable } from '@nestjs/common';
 import { IEmailService } from './email.service.interface';
 import { EMAIL_PROVIDER, EMAIL_TEMPLATE_SERVICE } from '../tokens';
@@ -14,6 +15,7 @@ export class EmailService implements IEmailService {
     @Inject(EMAIL_TEMPLATE_SERVICE)
     private readonly emailTemplateService: IEmailTemplateService,
     @InjectPinoLogger('EmailService') private readonly logger: PinoLogger,
+    private readonly configService: ConfigService,
   ) {}
 
   async sendForgotPasswordEmail(
@@ -23,6 +25,7 @@ export class EmailService implements IEmailService {
     try {
       await this.emailProvider.send({
         to: user.email,
+        // to-do: mover subject para mapper file
         subject: 'Recuperação de senha',
         html: this.emailTemplateService.render(
           'forgot-password.template',
@@ -38,6 +41,64 @@ export class EmailService implements IEmailService {
       this.logger.error(
         '[sendForgotPasswordEmail]: Error sending email: ' + error,
       );
+      return false;
+    }
+  }
+
+  async sendChangeEmailRequestEmail(
+    user: User,
+    email: string,
+    link: string,
+    expiresIn: string,
+  ): Promise<boolean> {
+    try {
+      await this.emailProvider.send({
+        to: email,
+        // to-do: mover subject para mapper file
+        subject: 'Solicitação de alteração de e-mail',
+        html: this.emailTemplateService.render(
+          'change-email-request.template',
+          user?.preferredLanguage ?? Lang.PT_BR,
+          {
+            name: user.name,
+            appName: this.configService.get('APP_NAME'),
+            year: new Date().getFullYear(),
+            newEmail: email,
+            link,
+            expiresIn,
+          },
+        ),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async sendNotifyEmailChanged(
+    user: User,
+    oldEmail: string,
+    newEmail: string,
+  ): Promise<boolean> {
+    try {
+      await this.emailProvider.send({
+        to: oldEmail,
+        // to-do: mover subject para mapper file
+        subject: 'Alteração de e-mail - Accounted',
+        html: this.emailTemplateService.render(
+          'notify-email-changed.template',
+          user?.preferredLanguage ?? Lang.PT_BR,
+          {
+            name: user.name,
+            appName: this.configService.get('APP_NAME'),
+            year: new Date().getFullYear(),
+            newEmail,
+            oldEmail,
+          },
+        ),
+      });
+      return true;
+    } catch {
       return false;
     }
   }

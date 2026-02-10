@@ -16,7 +16,7 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
-import { Lang, Providers, User } from '../../../@types';
+import { Lang, Providers, StringValue, User } from '../../../@types';
 import { EMAIL_SERVICE, type IEmailService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
@@ -130,16 +130,10 @@ export class AuthService implements IAuthService {
       throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
-    await this.mfaService.validateMfa(tempTokenPayload.sub, dto.code);
-
-    const payload = {
-      sub: user.id,
-    };
-
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
-    });
+    const { accessToken } = await this.mfaService.validateMfa(
+      tempTokenPayload.sub,
+      dto.code,
+    );
 
     const refreshToken = await this.jwtService.signAsync(
       { sub: user.id, tokenVersion: user.tokenVersion },
@@ -166,13 +160,30 @@ export class AuthService implements IAuthService {
       throw new AppError(APP_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
-    const accessToken = await this.jwtService.signAsync(
-      { sub: user.id },
-      {
-        secret: this.configService.get('JWT_SECRET'),
-        expiresIn: this.configService.get('JWT_EXPIRES_IN'),
-      },
-    );
+    const payload: any = {
+      sub: user.id,
+    };
+
+    // Se existir mfaLastVerifiedAt no banco
+    if (user.mfaLastVerifiedAt) {
+      const now = Date.now();
+      const mfaAge = now - new Date(user.mfaLastVerifiedAt).getTime();
+
+      // to-do: mover para env
+      const MFA_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+      if (mfaAge <= MFA_WINDOW_MS) {
+        // to-do: colocar essa regra em algum canto com nome descritivo
+        payload.mfaAuthenticatedAt = Math.floor(
+          new Date(user.mfaLastVerifiedAt).getTime() / 1000,
+        );
+      }
+    }
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+    });
 
     return {
       accessToken,
@@ -245,5 +256,103 @@ export class AuthService implements IAuthService {
     } catch {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
+  }
+
+  async requestUpdateEmail(userId: string, email: string): Promise<void> {
+    const emailAlreadyExists = await this.userService.safeFind(email);
+
+    if (emailAlreadyExists) {
+      throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
+    }
+
+    const user = await this.userService.findById(userId);
+
+    const nowDate = Date.now();
+
+    if (
+      user.emailChangeRequestedAt &&
+      nowDate - user.emailChangeRequestedAt.getTime() < 60_000
+    ) {
+      throw new AppError(APP_ERRORS.TOO_MANY_REQUESTS);
+    }
+
+    // prevent multiple requests, concurrency
+    const requestedAt = nowDate;
+
+    await this.userService.updateUserIntern(userId, {
+      emailChangeRequestedAt: new Date(requestedAt),
+    });
+
+    const expiresIn = String(
+      this.configService.get('JWT_CHANGE_EMAIL_EXPIRES_IN'),
+    ) as StringValue;
+
+    const token = await this.jwtService.signAsync(
+      {
+        sub: userId,
+        type: 'email-change',
+        newEmail: email,
+        requestedAt,
+      },
+      {
+        secret: this.configService.get('JWT_CHANGE_EMAIL_SECRET'),
+        expiresIn,
+      },
+    );
+
+    await this.emaillService.sendChangeEmailRequestEmail(
+      user,
+      email,
+      `${this.configService.get('FRONT_CHANGE_EMAIL_URL')}?token=${encodeURIComponent(token)}`,
+      expiresIn,
+    );
+  }
+
+  async confirmUpdateEmail(token: string) {
+    const payload = await this.jwtService.verifyAsync<{
+      requestedAt: number;
+      newEmail: string;
+      type: string;
+      sub: string;
+    }>(token, {
+      secret: this.configService.get('JWT_CHANGE_EMAIL_SECRET'),
+    });
+
+    if (payload.type !== 'email-change') {
+      throw new AppError(APP_ERRORS.INVALID_TOKEN);
+    }
+
+    const user = await this.userService.findById(payload.sub);
+
+    if (!user.emailChangeRequestedAt) {
+      throw new AppError(APP_ERRORS.INVALID_TOKEN);
+    }
+
+    if (payload.requestedAt !== user.emailChangeRequestedAt?.getTime()) {
+      throw new AppError(APP_ERRORS.USER_FORBIDDEN);
+    }
+
+    const emailAlreadyExists = await this.userService.safeFind(
+      payload.newEmail,
+    );
+
+    if (emailAlreadyExists) {
+      throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
+    }
+
+    const oldEmail = user.email;
+
+    await this.userService.updateUserIntern(payload.sub, {
+      email: payload.newEmail,
+      emailChangeRequestedAt: null,
+    });
+
+    await this.userService.incrementTokenVersion(payload.sub);
+
+    await this.emaillService.sendNotifyEmailChanged(
+      user,
+      oldEmail,
+      payload.newEmail,
+    );
   }
 }
