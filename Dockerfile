@@ -4,7 +4,7 @@ WORKDIR /app
 FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 COPY package.json package-lock.json* ./
-RUN npm ci;
+RUN npm ci --ignore-scripts;
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
