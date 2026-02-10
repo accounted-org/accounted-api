@@ -7,4 +7,5 @@ export interface IUserRepository {
   find(idOrEmail: string): Promise<User | null>;
   incrementTokenVersion(userId: string): Promise<User | null>;
   update(userId: string, data: UpdateUser): Promise<User | null>;
+  delete(userId: string): Promise<User | null>;
 }

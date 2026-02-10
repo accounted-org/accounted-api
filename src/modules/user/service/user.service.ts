@@ -2,12 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
-import { CreateUser, SignUpDto, UpdateUser } from '../dtos';
+import { CreateUser, UpdateUserDto, UpdateUser } from '../dtos';
 import { IUserService } from './user.service.interface';
-import { Providers, User } from '../../../@types';
+import { Providers, PublicUser, User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
 import { AppError } from '../../../@errors/app-error';
 import { APP_ERRORS } from '../../../@errors';
+import { SignUpDto } from '../../auth';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -62,11 +63,7 @@ export class UserService implements IUserService {
   }
 
   async getProfile(userId: string): Promise<Partial<User>> {
-    const user = await this.userRepository.find(userId);
-
-    if (!user) {
-      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
-    }
+    const user = await this.findById(userId);
 
     return this.userBuilder.publicUser(user);
   }
@@ -91,15 +88,35 @@ export class UserService implements IUserService {
     return user;
   }
 
-  async updateUser(userId: string, data: UpdateUser): Promise<User> {
-    const user = await this.userRepository.find(userId);
+  async safeFind(idOrEmail: string) {
+    const user = await this.userRepository.find(idOrEmail);
 
     if (!user) {
-      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
+      return null;
     }
+
+    return user;
+  }
+
+  async updateUserIntern(userId: string, data: UpdateUser): Promise<User> {
+    const user = await this.findById(userId);
 
     await this.userRepository.update(userId, data);
 
     return user;
+  }
+
+  async updateUser(userId: string, data: UpdateUserDto): Promise<PublicUser> {
+    const user = await this.findById(userId);
+
+    await this.userRepository.update(userId, data);
+
+    return this.userBuilder.publicUser(user);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const user = await this.findById(userId);
+
+    await this.userRepository.delete(user.id);
   }
 }

@@ -1,5 +1,5 @@
 import { User } from '../../../@types';
-import { SignUpDto } from '../../user/dtos';
+import { SignUpDto } from '../dtos';
 import {
   SignInStepOneRequestDto,
   SignInStepTwoRequestDto,
@@ -21,4 +21,6 @@ export interface IAuthService {
   createUser(dto: SignUpDto): Promise<User>;
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
+  requestUpdateEmail(userId: string, email: string): Promise<void>;
+  confirmUpdateEmail(token: string): Promise<void>;
 }

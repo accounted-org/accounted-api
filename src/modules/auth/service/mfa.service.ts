@@ -1,17 +1,14 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
 import { IMfaService } from './mfa.service.interface';
 
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { USER_SERVICE, type IUserService } from '../../user';
-import { MfaData } from '../dtos';
+import { MfaData, ValidateMfa } from '../dtos';
 import { JwtService } from '@nestjs/jwt';
+import { AppError } from '../../../@errors/app-error';
+import { APP_ERRORS } from '../../../@errors';
 
 @Injectable()
 export class MfaService implements IMfaService {
@@ -19,6 +16,7 @@ export class MfaService implements IMfaService {
     @Inject(USER_SERVICE)
     private readonly userService: IUserService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async generateMfa(tempToken: string): Promise<MfaData> {
@@ -26,13 +24,13 @@ export class MfaService implements IMfaService {
       await this.jwtService.verifyAsync(tempToken);
 
     if (!tempTokenPayload || !tempTokenPayload.mfaPending) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
 
     const user = await this.userService.findById(tempTokenPayload.sub);
 
     if (user.mfaEnabled) {
-      throw new BadRequestException('MFA already enabled');
+      throw new AppError(APP_ERRORS.MFA_ALREADY_ENABLED);
     }
 
     const secret = speakeasy.generateSecret({
@@ -40,12 +38,12 @@ export class MfaService implements IMfaService {
       length: 32,
     });
 
-    await this.userService.updateUser(user.id, {
+    await this.userService.updateUserIntern(user.id, {
       mfaSecret: secret.base32,
     });
 
     if (!secret.otpauth_url) {
-      throw new InternalServerErrorException('Internal server error');
+      throw new AppError(APP_ERRORS.INTERNAL_SERVER_ERROR);
     }
 
     const qrCode = await QRCode.toDataURL(secret.otpauth_url);
@@ -61,28 +59,10 @@ export class MfaService implements IMfaService {
       await this.jwtService.verifyAsync(tempToken);
 
     if (!tempTokenPayload || !tempTokenPayload.mfaPending) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
 
-    const user = await this.userService.findById(tempTokenPayload.sub);
-
-    if (!user.mfaSecret) {
-      throw new BadRequestException('MFA not initialized');
-    }
-
-    if (user.mfaEnabled) {
-      throw new BadRequestException('MFA already enabled');
-    }
-
-    const isValid = this.verifyCode(user.mfaSecret, code);
-
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid code');
-    }
-
-    await this.userService.updateUser(user.id, {
-      mfaEnabled: true,
-    });
+    await this.validateMfa(tempTokenPayload.sub, code, true);
 
     return true;
   }
@@ -93,20 +73,50 @@ export class MfaService implements IMfaService {
    * @param code app generated token
    * @returns success
    */
-  async validateMfa(userId: string, code: string): Promise<boolean> {
+  async validateMfa(
+    userId: string,
+    code: string,
+    isActivating = false,
+  ): Promise<ValidateMfa> {
     const user = await this.userService.findById(userId);
 
-    if (!user.mfaEnabled || !user.mfaSecret) {
-      throw new UnauthorizedException('MFA pending');
+    if (!isActivating && !user.mfaEnabled) {
+      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
+    }
+
+    if (!user.mfaSecret) {
+      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
     }
 
     const isValid = this.verifyCode(user.mfaSecret, code);
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid code');
+      throw new AppError(APP_ERRORS.MFA_INVALID_CODE);
     }
 
-    return true;
+    const mfaLastVerifiedAt = new Date();
+
+    await this.userService.updateUserIntern(userId, {
+      mfaLastVerifiedAt,
+      ...(isActivating && { mfaEnabled: true }),
+    });
+
+    const payload = {
+      sub: user.id,
+      // to-do: colocar essa regra em algum canto com nome descritivo
+      mfaAuthenticatedAt: Math.floor(mfaLastVerifiedAt.getTime() / 1000),
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+    });
+
+    return {
+      success: true,
+      mfaLastVerifiedAt,
+      accessToken,
+    };
   }
 
   private verifyCode(secret: string, token: string): boolean {

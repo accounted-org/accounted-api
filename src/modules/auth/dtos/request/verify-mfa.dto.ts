@@ -1,17 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength } from 'class-validator';
 
-export class SignInStepTwoRequestDto {
-  @ApiProperty({
-    description: 'JWT Token to validate MFA flow in step two',
-  })
+export class VerifyMfaDto {
   @IsString()
-  tempToken: string;
-
+  @MinLength(6)
   @ApiProperty({
     description: 'Code generate by authenticator app',
   })
-  @MinLength(6)
-  @IsString()
   code: string;
 }
