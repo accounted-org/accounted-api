@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: nest_prisma
+      POSTGRES_DB: accounted-dev
     volumes:
       - pgdata:/var/lib/postgresql/data
 
