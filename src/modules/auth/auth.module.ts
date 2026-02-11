@@ -5,9 +5,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtRefreshStrategy, JwtStrategy } from './strategies';
 import { ConfigService } from '@nestjs/config';
 import { UserModule } from '../user';
-import { AUTH_SERVICE, MFA_SERVICE } from './tokens';
+import { AUTH_REPOSITORY, AUTH_SERVICE, MFA_SERVICE } from './tokens';
 import { StringValue } from '../../@types';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { PrismaAuthPersistenceAdapter } from './repository/prisma-auth.persistence-adapter';
 
 @Module({
   imports: [
@@ -24,6 +25,10 @@ import { GoogleStrategy } from './strategies/google.strategy';
   ],
   controllers: [AuthController, MfaController],
   providers: [
+    {
+      provide: AUTH_REPOSITORY,
+      useClass: PrismaAuthPersistenceAdapter,
+    },
     {
       provide: AUTH_SERVICE,
       useClass: AuthService,

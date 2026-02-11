@@ -3,6 +3,7 @@ import { AUTH_ERRORS } from './auth.errors';
 import { EMAIL_ERRORS } from './email.errors';
 import { MFA_ERRORS } from './mfa.errors';
 import { SYS_ERRORS } from './sys.errors';
+import { VALIDATION_ERRORS } from './validation.errors';
 
 export const APP_ERRORS = {
   ...USER_ERRORS,
@@ -10,4 +11,5 @@ export const APP_ERRORS = {
   ...SYS_ERRORS,
   ...MFA_ERRORS,
   ...AUTH_ERRORS,
+  ...VALIDATION_ERRORS,
 } as const;

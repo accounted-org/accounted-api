@@ -98,10 +98,14 @@ export class UserService implements IUserService {
     return user;
   }
 
-  async updateUserIntern(userId: string, data: UpdateUser): Promise<User> {
+  async updateUserIntern(
+    userId: string,
+    data: UpdateUser,
+    revokeSession?: boolean,
+  ): Promise<User> {
     const user = await this.findById(userId);
 
-    await this.userRepository.update(userId, data);
+    await this.userRepository.update(userId, data, revokeSession);
 
     return user;
   }
