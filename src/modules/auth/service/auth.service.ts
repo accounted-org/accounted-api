@@ -15,11 +15,14 @@ import { USER_SERVICE, type IUserService } from '../../user';
 import { type IAuthService } from './auth.service.interface';
 import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
-import { MFA_SERVICE } from '../tokens';
+import { AUTH_REPOSITORY, MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
 import { Lang, Providers, StringValue, User } from '../../../@types';
 import { EMAIL_SERVICE, type IEmailService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { type IAuthRepository } from '../repository';
+import { type IUnitOfWork, UOW_PROVIDER } from '../../unit-of-work';
+import { Auth } from '../../../@types/auth';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -32,12 +35,35 @@ export class AuthService implements IAuthService {
     private readonly mfaService: IMfaService,
     @Inject(EMAIL_SERVICE)
     private readonly emaillService: IEmailService,
+    @Inject(AUTH_REPOSITORY)
+    private readonly authRepository: IAuthRepository,
     private readonly passwordUtils: PasswordUtils,
-    @InjectPinoLogger('AuthService') private readonly logger: PinoLogger,
+    @InjectPinoLogger('AuthService')
+    private readonly logger: PinoLogger,
+    @Inject(UOW_PROVIDER)
+    private readonly uow: IUnitOfWork,
   ) {}
 
   async createUser(dto: SignUpDto): Promise<User> {
-    return await this.userService.createUser(dto);
+    return await this.uow.execute(async (repos) => {
+      const user = await repos.users.create({
+        email: dto.email,
+        name: dto.name,
+        provider: Providers.INTERN,
+      });
+
+      if (!user) {
+        throw new AppError(APP_ERRORS.SERVER_ERROR);
+      }
+
+      await repos.auth.createAuthData({
+        userId: user.id,
+        provider: Providers.INTERN,
+        passwordHash: await this.passwordUtils.hashPassword(dto.password),
+      });
+
+      return user;
+    });
   }
 
   async googleLogin(googleUser: any) {
@@ -53,6 +79,12 @@ export class AuthService implements IAuthService {
       });
     }
 
+    const auth = await this.authRepository.findUserAuthData(user.id);
+
+    if (!auth) {
+      throw new AppError(APP_ERRORS.INVALID_PROVIDER);
+    }
+
     const payload = {
       sub: user.id,
       email: user.email,
@@ -64,7 +96,7 @@ export class AuthService implements IAuthService {
     });
 
     const refreshToken = await this.jwtService.signAsync(
-      { sub: user.id, tokenVersion: user.tokenVersion },
+      { sub: user.id, tokenVersion: auth.tokenVersion },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
         expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
@@ -86,13 +118,15 @@ export class AuthService implements IAuthService {
       throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
-    if (!user.passwordHash) {
+    const auth = await this.findAuthData(user.id);
+
+    if (!auth.passwordHash) {
       throw new AppError(APP_ERRORS.INVALID_LOGIN_PROVIDER);
     }
 
     const passwordsMatch = await this.passwordUtils.comparePassword(
       data.password,
-      user.passwordHash,
+      auth.passwordHash,
     );
 
     if (!passwordsMatch) {
@@ -108,7 +142,7 @@ export class AuthService implements IAuthService {
     );
 
     return {
-      mfaEnabled: user.mfaEnabled,
+      mfaEnabled: auth.mfaEnabled,
       tempToken,
     };
   }
@@ -131,13 +165,15 @@ export class AuthService implements IAuthService {
       throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
+    const auth = await this.findAuthData(user.id);
+
     const { accessToken } = await this.mfaService.validateMfa(
       tempTokenPayload.sub,
       dto.code,
     );
 
     const refreshToken = await this.jwtService.signAsync(
-      { sub: user.id, tokenVersion: user.tokenVersion },
+      { sub: user.id, tokenVersion: auth.tokenVersion },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
         expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN'),
@@ -157,7 +193,9 @@ export class AuthService implements IAuthService {
       throw new AppError(APP_ERRORS.USER_UNAUTHORIZED);
     }
 
-    if (user.tokenVersion !== tokenVersion) {
+    const auth = await this.findAuthData(user.id);
+
+    if (auth.tokenVersion !== tokenVersion) {
       throw new AppError(APP_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
@@ -166,9 +204,9 @@ export class AuthService implements IAuthService {
     };
 
     // Se existir mfaLastVerifiedAt no banco
-    if (user.mfaLastVerifiedAt) {
+    if (auth.mfaLastVerifiedAt) {
       const now = Date.now();
-      const mfaAge = now - new Date(user.mfaLastVerifiedAt).getTime();
+      const mfaAge = now - new Date(auth.mfaLastVerifiedAt).getTime();
 
       // to-do: mover para env
       const MFA_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -176,7 +214,7 @@ export class AuthService implements IAuthService {
       if (mfaAge <= MFA_WINDOW_MS) {
         // to-do: colocar essa regra em algum canto com nome descritivo
         payload.mfaAuthenticatedAt = Math.floor(
-          new Date(user.mfaLastVerifiedAt).getTime() / 1000,
+          new Date(auth.mfaLastVerifiedAt).getTime() / 1000,
         );
       }
     }
@@ -192,14 +230,15 @@ export class AuthService implements IAuthService {
   }
 
   async invalidateRefreshToken(userId: string): Promise<void> {
-    await this.userService.incrementTokenVersion(userId);
+    await this.authRepository.incrementTokenVersion(userId);
   }
 
   async forgotPassword(email: string): Promise<void> {
     try {
       const user = await this.userService.findByEmail(email);
+      const auth = await this.findAuthData(user.id);
 
-      if (user.provider !== Providers.INTERN.toString()) {
+      if (auth.provider !== Providers.INTERN.toString()) {
         this.logger.info('[forgotPassword]: User provider not allowed');
 
         return;
@@ -251,13 +290,15 @@ export class AuthService implements IAuthService {
 
       const passwordHash = await this.passwordUtils.hashPassword(newPassword);
 
-      await this.userService.updateUserIntern(
+      await this.authRepository.updateAuth(
         user.id,
         {
           passwordHash,
         },
         true,
       );
+
+      await this.emaillService.sendPasswordChangedEmail(user);
     } catch {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
@@ -265,8 +306,9 @@ export class AuthService implements IAuthService {
 
   async updatePassword(userId: string, dto: UpdatePasswordDto): Promise<void> {
     const user = await this.userService.findById(userId);
+    const auth = await this.findAuthData(user.id);
 
-    if (user.provider !== Providers.INTERN.toString() || !user.passwordHash) {
+    if (auth.provider !== Providers.INTERN.toString() || !auth.passwordHash) {
       throw new AppError(APP_ERRORS.INVALID_PROVIDER);
     }
 
@@ -276,7 +318,7 @@ export class AuthService implements IAuthService {
 
     const validPass = await this.passwordUtils.comparePassword(
       dto.currentPassword,
-      user.passwordHash,
+      auth.passwordHash,
     );
 
     if (!validPass) {
@@ -285,7 +327,7 @@ export class AuthService implements IAuthService {
 
     const passwordHash = await this.passwordUtils.hashPassword(dto.newPassword);
 
-    await this.userService.updateUserIntern(
+    await this.authRepository.updateAuth(
       user.id,
       {
         passwordHash,
@@ -304,12 +346,13 @@ export class AuthService implements IAuthService {
     }
 
     const user = await this.userService.findById(userId);
+    const auth = await this.findAuthData(user.id);
 
     const nowDate = Date.now();
 
     if (
-      user.emailChangeRequestedAt &&
-      nowDate - user.emailChangeRequestedAt.getTime() < 60_000
+      auth.emailChangeRequestedAt &&
+      nowDate - auth.emailChangeRequestedAt.getTime() < 60_000
     ) {
       throw new AppError(APP_ERRORS.TOO_MANY_REQUESTS);
     }
@@ -317,7 +360,8 @@ export class AuthService implements IAuthService {
     // prevent multiple requests, concurrency
     const requestedAt = nowDate;
 
-    await this.userService.updateUserIntern(userId, {
+    // to-do: criar o model de EmailChangeRequest e mudar para la
+    await this.authRepository.updateAuth(userId, {
       emailChangeRequestedAt: new Date(requestedAt),
     });
 
@@ -361,12 +405,13 @@ export class AuthService implements IAuthService {
     }
 
     const user = await this.userService.findById(payload.sub);
+    const auth = await this.findAuthData(user.id);
 
-    if (!user.emailChangeRequestedAt) {
+    if (!auth.emailChangeRequestedAt) {
       throw new AppError(APP_ERRORS.INVALID_TOKEN);
     }
 
-    if (payload.requestedAt !== user.emailChangeRequestedAt?.getTime()) {
+    if (payload.requestedAt !== auth.emailChangeRequestedAt?.getTime()) {
       throw new AppError(APP_ERRORS.USER_FORBIDDEN);
     }
 
@@ -380,17 +425,30 @@ export class AuthService implements IAuthService {
 
     const oldEmail = user.email;
 
-    await this.userService.updateUserIntern(payload.sub, {
-      email: payload.newEmail,
-      emailChangeRequestedAt: null,
-    });
+    await this.uow.execute(async (repos) => {
+      await repos.users.update(payload.sub, { email: payload.newEmail });
 
-    await this.userService.incrementTokenVersion(payload.sub);
+      await repos.auth.updateAuth(payload.sub, {
+        emailChangeRequestedAt: null,
+      });
+
+      await repos.auth.incrementTokenVersion(payload.sub);
+    });
 
     await this.emaillService.sendNotifyEmailChanged(
       user,
       oldEmail,
       payload.newEmail,
     );
+  }
+
+  async findAuthData(userId: string): Promise<Auth> {
+    const auth = await this.authRepository.findUserAuthData(userId);
+
+    if (!auth) {
+      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
+    }
+
+    return auth;
   }
 }

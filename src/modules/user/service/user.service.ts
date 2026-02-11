@@ -2,13 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
-import { CreateUser, UpdateUserDto, UpdateUser } from '../dtos';
+import { CreateUser, UpdateUserDto } from '../dtos';
 import { IUserService } from './user.service.interface';
-import { Providers, PublicUser, User } from '../../../@types';
+import { PublicUser, User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
 import { AppError } from '../../../@errors/app-error';
 import { APP_ERRORS } from '../../../@errors';
-import { SignUpDto } from '../../auth';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -23,21 +22,6 @@ export class UserService implements IUserService {
     return await this.userRepository.find(idOrEmail);
   }
 
-  async createUser(data: SignUpDto) {
-    const userAlreadyExists = await this.userRepository.findByEmail(data.email);
-
-    if (userAlreadyExists) {
-      throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
-    }
-
-    return await this.userRepository.create({
-      email: data.email,
-      name: data.name,
-      passwordHash: await this.passwordUtils.hashPassword(data.password),
-      provider: Providers.INTERN,
-    });
-  }
-
   async createProviderUser(data: CreateUser) {
     const userAlreadyExists = await this.userRepository.findByEmail(data.email);
 
@@ -50,16 +34,6 @@ export class UserService implements IUserService {
       name: data.name,
       provider: data.provider,
     });
-  }
-
-  async incrementTokenVersion(userId: string): Promise<number> {
-    const user = await this.userRepository.incrementTokenVersion(userId);
-
-    if (!user) {
-      throw new AppError(APP_ERRORS.USER_NOT_FOUND);
-    }
-
-    return user.tokenVersion;
   }
 
   async getProfile(userId: string): Promise<Partial<User>> {
@@ -98,24 +72,12 @@ export class UserService implements IUserService {
     return user;
   }
 
-  async updateUserIntern(
-    userId: string,
-    data: UpdateUser,
-    revokeSession?: boolean,
-  ): Promise<User> {
-    const user = await this.findById(userId);
-
-    await this.userRepository.update(userId, data, revokeSession);
-
-    return user;
-  }
-
   async updateUser(userId: string, data: UpdateUserDto): Promise<PublicUser> {
-    const user = await this.findById(userId);
+    await this.findById(userId);
 
-    await this.userRepository.update(userId, data);
+    const updatedUser = await this.userRepository.update(userId, data);
 
-    return this.userBuilder.publicUser(user);
+    return this.userBuilder.publicUser(updatedUser);
   }
 
   async deleteUser(userId: string): Promise<void> {

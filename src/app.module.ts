@@ -5,6 +5,7 @@ import {
   AuthModule,
   TransactionModule,
   UserModule,
+  UnitOfWorkModule,
 } from './modules';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -36,6 +37,7 @@ import { RecentMfaGuard } from './modules/auth/guards/recent-mfa.guard';
     AuthModule,
     UserModule,
     TransactionModule,
+    UnitOfWorkModule,
     MetricsModule,
     LogsModule,
   ],

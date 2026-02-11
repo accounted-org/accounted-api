@@ -19,33 +19,34 @@ model Transaction {
 }
 
 model User {
-  id                     String    @id @default(cuid())
-  email                  String    @unique
-  name                   String
-  passwordHash           String?
-  preferredLanguage      String?
-  provider               String
-  active                 Boolean   @default(true)
-  tokenVersion           Int       @default(0)
-  mfaEnabled             Boolean   @default(false)
-  mfaSecret              String?
-  mfaLastVerifiedAt      DateTime?
-  emailChangeRequestedAt DateTime?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
-  auth                   Auth?
+  id                String  @id @default(cuid())
+  email             String  @unique
+  name              String
+  preferredLanguage String?
+  active            Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auth Auth?
 }
 
 model Auth {
   id     String @id @default(cuid())
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  passwordHash String?
   provider     String
+  passwordHash String?
   tokenVersion Int     @default(0)
+
+  // alterar depois pra model especifico
+  emailChangeRequestedAt DateTime?
 
   mfaEnabled        Boolean   @default(false)
   mfaSecret         String?
   mfaLastVerifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
