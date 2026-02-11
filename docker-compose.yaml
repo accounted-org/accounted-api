@@ -10,9 +10,77 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: rootpassword
-      POSTGRES_DB: nest_prisma
+      POSTGRES_DB: accounted-dev
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  jaeger:
+    image: jaegertracing/all-in-one
+    container_name: jaeger
+    restart: always
+    environment:
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+      - COLLECTOR_OTLP_ENABLED=true
+    command:
+      - '--prometheus.server-url=http://prometheus:9090'
+      - '--prometheus.query.namespace=traces_span_metrics'
+      - '--prometheus.query.normalize-calls=true'
+      - '--prometheus.query.normalize-duration=true'
+      - '--prometheus.query.duration-unit=ms'
+    ports:
+      - '16686:16686'
+      - '4317:4317'
+      - '4318:4318'
+      - '14269:14269'
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    restart: always
+    command: ['--config=/etc/otelcol/config.yml']
+    volumes:
+      - ./otelcol.config.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - '4319:4318'
+      - '8889:8889'
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - '4000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - jaeger
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - '127.0.0.1:6379:6379'
+    restart: always
+
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:
+  redis_data:

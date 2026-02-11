@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TransactionController } from './controller';
 import { TransactionService } from './service';
-import { TransactionRepository } from './repository';
+import { PrimsaTransactionPersistenceAdapter } from './repository';
 import { TRANSACTION_REPOSITORY, TRANSACTION_SERVICE } from './tokens';
 
 @Module({
@@ -9,7 +9,7 @@ import { TRANSACTION_REPOSITORY, TRANSACTION_SERVICE } from './tokens';
   providers: [
     {
       provide: TRANSACTION_REPOSITORY,
-      useClass: TransactionRepository,
+      useClass: PrimsaTransactionPersistenceAdapter,
     },
     {
       provide: TRANSACTION_SERVICE,

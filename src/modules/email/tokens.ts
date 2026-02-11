@@ -1,0 +1,3 @@
+export const EMAIL_SERVICE = Symbol('EMAIL_SERVICE');
+export const EMAIL_TEMPLATE_SERVICE = Symbol('EMAIL_TEMPLATE_SERVICE');
+export const EMAIL_PROVIDER = Symbol('EMAIL_PROVIDER');

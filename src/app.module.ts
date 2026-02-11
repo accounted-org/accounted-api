@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common';
 import {
-  AuthModule,
   PrismaModule,
-  TransactionModule,
   UtilsModule,
+  AuthModule,
+  TransactionModule,
+  UserModule,
 } from './modules';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard, MfaSessionGuard } from './modules/auth';
+import { LogsModule } from './observability/logs.module';
+import { MetricsModule } from './observability/metrics/metrics.module';
+import { EmailModule } from './modules/email';
+import { RecentMfaGuard } from './modules/auth/guards/recent-mfa.guard';
 
 @Module({
   imports: [
@@ -19,17 +25,37 @@ import { APP_GUARD } from '@nestjs/core';
         },
       ],
     }),
-    ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
-    UtilsModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      expandVariables: true,
+      envFilePath: `.env`,
+    }),
+    EmailModule,
     PrismaModule,
+    UtilsModule,
     AuthModule,
+    UserModule,
     TransactionModule,
+    MetricsModule,
+    LogsModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: MfaSessionGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RecentMfaGuard,
     },
   ],
 })

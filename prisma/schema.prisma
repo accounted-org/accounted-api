@@ -1,7 +1,5 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -18,4 +16,21 @@ model Transaction {
   type        String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  name                   String
+  passwordHash           String?
+  preferredLanguage      String?
+  provider               String
+  active                 Boolean   @default(true)
+  tokenVersion           Int       @default(0)
+  mfaEnabled             Boolean   @default(false)
+  mfaSecret              String?
+  mfaLastVerifiedAt      DateTime?
+  emailChangeRequestedAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }
