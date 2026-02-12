@@ -44,6 +44,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   deploy:
     needs: build
     runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}
