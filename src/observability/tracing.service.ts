@@ -1,17 +1,17 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { PinoLogger, Logger } from 'nestjs-pino';
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const exporter = new OTLPTraceExporter({
-  url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://localhost:4319/v1/traces',
+  url:
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ??
+    'http://localhost:4319/v1/traces',
   timeoutMillis: 15000,
 });
 
@@ -28,7 +28,8 @@ export const otelSdk = new NodeSDK({
       '@opentelemetry/instrumentation-fs': { enabled: false },
 
       '@opentelemetry/instrumentation-http': {
-        ignoreIncomingRequestHook: (req) => req.url?.includes('/health') ?? false,
+        ignoreIncomingRequestHook: (req) =>
+          req.url?.includes('/health') ?? false,
       },
     }),
   ],

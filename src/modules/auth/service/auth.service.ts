@@ -278,10 +278,10 @@ export class AuthService implements IAuthService {
 
       const redefinePasswordLink = `${this.configService.get('FRONT_RESET_PASSWORD_URL')}?token=${redefinePasswordToken}`;
 
-      await this.emaillService.sendForgotPasswordEmail(
+      await this.emaillService.sendForgotPasswordEmail({
         user,
-        redefinePasswordLink,
-      );
+        resetLink: redefinePasswordLink,
+      });
     } catch {
       this.logger.info(
         `[forgotPassword]: User with email '${email}' not found`,
@@ -316,7 +316,7 @@ export class AuthService implements IAuthService {
         true,
       );
 
-      await this.emaillService.sendPasswordChangedEmail(user);
+      await this.emaillService.sendPasswordChangedEmail({ user });
     } catch {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
@@ -353,7 +353,7 @@ export class AuthService implements IAuthService {
       true,
     );
 
-    await this.emaillService.sendPasswordChangedEmail(user);
+    await this.emaillService.sendPasswordChangedEmail({ user });
   }
 
   async requestUpdateEmail(userId: string, email: string): Promise<void> {
@@ -400,12 +400,12 @@ export class AuthService implements IAuthService {
       },
     );
 
-    await this.emaillService.sendChangeEmailRequestEmail(
+    await this.emaillService.sendChangeEmailRequestEmail({
       user,
       email,
-      `${this.configService.get('FRONT_CHANGE_EMAIL_URL')}?token=${encodeURIComponent(token)}`,
       expiresIn,
-    );
+      link: `${this.configService.get('FRONT_CHANGE_EMAIL_URL')}?token=${encodeURIComponent(token)}`,
+    });
   }
 
   async confirmUpdateEmail(token: string) {
@@ -453,11 +453,11 @@ export class AuthService implements IAuthService {
       await repos.auth.incrementTokenVersion(payload.sub);
     });
 
-    await this.emaillService.sendNotifyEmailChanged(
+    await this.emaillService.sendNotifyEmailChangedEmail({
       user,
       oldEmail,
-      payload.newEmail,
-    );
+      newEmail: payload.newEmail,
+    });
   }
 
   private async findAuthData(userId: string): Promise<Auth> {

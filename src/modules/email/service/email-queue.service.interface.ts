@@ -5,17 +5,17 @@ import {
   SendPasswordChangedEmailPayload,
 } from '../@types';
 
-export interface IEmailService {
-  sendForgotPasswordEmail(
+export interface IEmailQueueService {
+  enqueueForgotPasswordEmail(
     payload: SendForgotPasswordEmailPayload,
-  ): Promise<boolean>;
-  sendChangeEmailRequestEmail(
+  ): Promise<void>;
+  enqueueChangeEmailRequestEmail(
     payload: SendChangeEmailRequestEmailPayload,
-  ): Promise<boolean>;
-  sendNotifyEmailChangedEmail(
+  ): Promise<void>;
+  enqueueNotifyEmailChangedEmail(
     payload: SendNotifyEmailChangedEmailPayload,
-  ): Promise<boolean>;
-  sendPasswordChangedEmail(
+  ): Promise<void>;
+  enqueuePasswordChangedEmail(
     payload: SendPasswordChangedEmailPayload,
-  ): Promise<boolean>;
+  ): Promise<void>;
 }

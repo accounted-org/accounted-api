@@ -4,8 +4,14 @@ import { IEmailService } from './email.service.interface';
 import { EMAIL_PROVIDER, EMAIL_TEMPLATE_SERVICE } from '../tokens';
 import { type IEmailProvider } from '../providers';
 import { type IEmailTemplateService } from './email-template.service.interface';
-import { Lang, User } from '../../../@types';
+import { Lang } from '../../../@types';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import {
+  SendChangeEmailRequestEmailPayload,
+  SendForgotPasswordEmailPayload,
+  SendNotifyEmailChangedEmailPayload,
+  SendPasswordChangedEmailPayload,
+} from '../@types';
 
 @Injectable()
 export class EmailService implements IEmailService {
@@ -18,39 +24,12 @@ export class EmailService implements IEmailService {
     private readonly configService: ConfigService,
   ) {}
 
-  async sendForgotPasswordEmail(
-    user: User,
-    resetLink: string,
-  ): Promise<boolean> {
-    try {
-      await this.emailProvider.send({
-        to: user.email,
-        // to-do: mover subject para mapper file
-        subject: 'Recuperação de senha',
-        html: this.emailTemplateService.render(
-          'forgot-password.template',
-          user?.preferredLanguage ?? Lang.PT_BR,
-          {
-            name: user.name,
-            resetLink,
-          },
-        ),
-      });
-      return true;
-    } catch (error) {
-      this.logger.error(
-        '[sendForgotPasswordEmail]: Error sending email: ' + error,
-      );
-      return false;
-    }
-  }
-
-  async sendChangeEmailRequestEmail(
-    user: User,
-    email: string,
-    link: string,
-    expiresIn: string,
-  ): Promise<boolean> {
+  async sendChangeEmailRequestEmail({
+    user,
+    email,
+    link,
+    expiresIn,
+  }: SendChangeEmailRequestEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: email,
@@ -76,11 +55,38 @@ export class EmailService implements IEmailService {
     }
   }
 
-  async sendNotifyEmailChanged(
-    user: User,
-    oldEmail: string,
-    newEmail: string,
-  ): Promise<boolean> {
+  async sendForgotPasswordEmail({
+    resetLink,
+    user,
+  }: SendForgotPasswordEmailPayload): Promise<boolean> {
+    try {
+      await this.emailProvider.send({
+        to: user.email,
+        // to-do: mover subject para mapper file
+        subject: 'Recuperação de senha',
+        html: this.emailTemplateService.render(
+          'forgot-password.template',
+          user?.preferredLanguage ?? Lang.PT_BR,
+          {
+            name: user.name,
+            resetLink,
+          },
+        ),
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        '[sendForgotPasswordEmail]: Error sending email: ' + error,
+      );
+      return false;
+    }
+  }
+
+  async sendNotifyEmailChangedEmail({
+    user,
+    oldEmail,
+    newEmail,
+  }: SendNotifyEmailChangedEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: oldEmail,
@@ -104,7 +110,9 @@ export class EmailService implements IEmailService {
     }
   }
 
-  async sendPasswordChangedEmail(user: User): Promise<boolean> {
+  async sendPasswordChangedEmail({
+    user,
+  }: SendPasswordChangedEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: user.email,
