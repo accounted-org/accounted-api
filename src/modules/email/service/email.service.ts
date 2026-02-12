@@ -70,7 +70,8 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch {
+    } catch (e) {
+      console.log('Email error', e);
       return false;
     }
   }

@@ -4,7 +4,7 @@ import {
   EMAIL_SERVICE,
   EMAIL_TEMPLATE_SERVICE,
 } from './tokens';
-import { MailgunEmailProvider } from './providers';
+import { OracleEmailProvider } from './providers';
 import { EmailService, HbsEmailTemplateService } from './service';
 
 const providers: Provider[] = [
@@ -19,7 +19,7 @@ const providers: Provider[] = [
   providers: [
     {
       provide: EMAIL_PROVIDER,
-      useClass: MailgunEmailProvider,
+      useClass: OracleEmailProvider,
     },
     {
       provide: EMAIL_TEMPLATE_SERVICE,
