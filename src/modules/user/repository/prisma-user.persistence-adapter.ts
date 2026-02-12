@@ -3,16 +3,18 @@ import { Injectable } from '@nestjs/common';
 import { CreateUser, UpdateUser } from '../dtos';
 import { User } from '../../../@types';
 import { IUserRepository } from './user.repository.interface';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PrismaUserPersistenceAdapter implements IUserRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService | Prisma.TransactionClient,
+  ) {}
 
   async create(data: CreateUser): Promise<User> {
     return await this.prismaService.user.create({
       data: {
         ...data,
-        mfaEnabled: false,
       },
     });
   }
@@ -29,32 +31,12 @@ export class PrismaUserPersistenceAdapter implements IUserRepository {
     });
   }
 
-  async incrementTokenVersion(userId: string): Promise<User | null> {
+  async update(userId: string, data: UpdateUser): Promise<User> {
     return await this.prismaService.user.update({
       where: {
         id: userId,
       },
-      data: {
-        tokenVersion: {
-          increment: 1,
-        },
-      },
-    });
-  }
-
-  async update(
-    userId: string,
-    data: UpdateUser,
-    revokeSession?: boolean,
-  ): Promise<User | null> {
-    return await this.prismaService.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        ...data,
-        tokenVersion: revokeSession ? { increment: 1 } : undefined,
-      },
+      data,
     });
   }
 

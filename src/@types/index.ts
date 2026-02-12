@@ -5,3 +5,4 @@ export * from './token';
 export * from './request';
 export * from './providers';
 export * from './enum';
+export * from './security-event';

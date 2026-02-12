@@ -3,13 +3,17 @@ import { TransactionController } from './controller';
 import { TransactionService } from './service';
 import { PrimsaTransactionPersistenceAdapter } from './repository';
 import { TRANSACTION_REPOSITORY, TRANSACTION_SERVICE } from './tokens';
+import { PrismaService } from '../prisma';
 
 @Module({
   controllers: [TransactionController],
   providers: [
     {
       provide: TRANSACTION_REPOSITORY,
-      useClass: PrimsaTransactionPersistenceAdapter,
+      useFactory: (prisma: PrismaService) => {
+        return new PrimsaTransactionPersistenceAdapter(prisma);
+      },
+      inject: [PrismaService],
     },
     {
       provide: TRANSACTION_SERVICE,

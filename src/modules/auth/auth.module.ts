@@ -9,6 +9,7 @@ import { AUTH_REPOSITORY, AUTH_SERVICE, MFA_SERVICE } from './tokens';
 import { StringValue } from '../../@types';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { PrismaAuthPersistenceAdapter } from './repository/prisma-auth.persistence-adapter';
+import { PrismaService } from '../prisma';
 
 @Module({
   imports: [
@@ -27,7 +28,10 @@ import { PrismaAuthPersistenceAdapter } from './repository/prisma-auth.persisten
   providers: [
     {
       provide: AUTH_REPOSITORY,
-      useClass: PrismaAuthPersistenceAdapter,
+      useFactory: (prisma: PrismaService) => {
+        return new PrismaAuthPersistenceAdapter(prisma);
+      },
+      inject: [PrismaService],
     },
     {
       provide: AUTH_SERVICE,
