@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { UOW_PROVIDER } from './tokens';
-import { PrismaUnitOfWork } from './prisma-unit-of-work';
+import { PrismaUnitOfWork } from './providers';
 
 @Global()
 @Module({

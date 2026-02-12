@@ -17,12 +17,13 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { AUTH_REPOSITORY, MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
-import { Lang, Providers, StringValue, User } from '../../../@types';
+import { Providers, StringValue, User } from '../../../@types';
 import { EMAIL_SERVICE, type IEmailService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { type IAuthRepository } from '../repository';
 import { type IUnitOfWork, UOW_PROVIDER } from '../../unit-of-work';
 import { Auth } from '../../../@types/auth';
+import { CreateUser } from '../../user/dtos';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -49,12 +50,7 @@ export class AuthService implements IAuthService {
       const user = await repos.users.create({
         email: dto.email,
         name: dto.name,
-        provider: Providers.INTERN,
       });
-
-      if (!user) {
-        throw new AppError(APP_ERRORS.SERVER_ERROR);
-      }
 
       await repos.auth.createAuthData({
         userId: user.id,
@@ -66,17 +62,39 @@ export class AuthService implements IAuthService {
     });
   }
 
-  async googleLogin(googleUser: any) {
-    const { email }: { email: string } = googleUser;
+  private async createProviderUser(
+    data: CreateUser,
+    provider: string,
+  ): Promise<User> {
+    return await this.uow.execute(async (repos) => {
+      const providerUser = await repos.users.create({
+        email: data.email,
+        name: data.name,
+      });
 
-    let user = await this.userService.findByEmail(email).catch(console.log);
+      await repos.auth.createAuthData({
+        userId: providerUser.id,
+        provider,
+      });
+
+      return providerUser;
+    });
+  }
+
+  async googleLogin(googleUser: any) {
+    const { email, firstName }: { email: string; firstName: string } =
+      googleUser;
+
+    let user = await this.userService.safeFind(email);
 
     if (!user) {
-      user = await this.userService.createProviderUser({
-        email: googleUser.email,
-        name: googleUser.firstName,
-        provider: Providers.GOOGLE,
-      });
+      user = await this.createProviderUser(
+        {
+          email,
+          name: firstName,
+        },
+        Providers.GOOGLE,
+      );
     }
 
     const auth = await this.authRepository.findUserAuthData(user.id);
@@ -258,7 +276,7 @@ export class AuthService implements IAuthService {
         },
       );
 
-      const redefinePasswordLink = `${this.configService.get('FRONT_RESET_PASSWORD_URL'.replace('<lang>', user.preferredLanguage ?? Lang.PT_BR))}?token=${redefinePasswordToken}`;
+      const redefinePasswordLink = `${this.configService.get('FRONT_RESET_PASSWORD_URL')}?token=${redefinePasswordToken}`;
 
       await this.emaillService.sendForgotPasswordEmail(
         user,
@@ -442,7 +460,7 @@ export class AuthService implements IAuthService {
     );
   }
 
-  async findAuthData(userId: string): Promise<Auth> {
+  private async findAuthData(userId: string): Promise<Auth> {
     const auth = await this.authRepository.findUserAuthData(userId);
 
     if (!auth) {

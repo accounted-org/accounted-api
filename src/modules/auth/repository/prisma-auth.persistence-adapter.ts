@@ -35,7 +35,7 @@ export class PrismaAuthPersistenceAdapter implements IAuthRepository {
   async incrementTokenVersion(userId: string): Promise<Auth | null> {
     return await this.prismaService.auth.update({
       where: {
-        id: userId,
+        userId,
       },
       data: {
         tokenVersion: {

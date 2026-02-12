@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PasswordUtils } from '../../utils';
 import { USER_REPOSITORY } from '../tokens';
 import type { IUserRepository } from '../repository';
-import { CreateUser, UpdateUserDto } from '../dtos';
+import { UpdateUserDto } from '../dtos';
 import { IUserService } from './user.service.interface';
 import { PublicUser, User } from '../../../@types';
 import { UserBuilder } from '../user.builder';
@@ -20,20 +20,6 @@ export class UserService implements IUserService {
 
   async validateUserIdentity(idOrEmail: string): Promise<User | null> {
     return await this.userRepository.find(idOrEmail);
-  }
-
-  async createProviderUser(data: CreateUser) {
-    const userAlreadyExists = await this.userRepository.findByEmail(data.email);
-
-    if (userAlreadyExists) {
-      throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
-    }
-
-    return await this.userRepository.create({
-      email: data.email,
-      name: data.name,
-      provider: data.provider,
-    });
   }
 
   async getProfile(userId: string): Promise<Partial<User>> {

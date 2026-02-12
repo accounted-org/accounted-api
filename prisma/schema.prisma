@@ -28,7 +28,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  auth Auth?
+  auth           Auth?
+  securityEvents SecurityEvent[]
 }
 
 model Auth {
@@ -47,6 +48,18 @@ model Auth {
   mfaSecret         String?
   mfaLastVerifiedAt DateTime?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
