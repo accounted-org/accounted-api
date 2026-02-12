@@ -1,10 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsEnum,
+  IsOptional,
   IsString,
   IsStrongPassword,
   MinLength,
 } from 'class-validator';
+import { Lang } from '../../../../@types';
 
 export class SignUpDto {
   @ApiProperty({
@@ -28,4 +31,8 @@ export class SignUpDto {
   })
   @IsStrongPassword({ minLength: 8 })
   password: string;
+
+  @IsOptional()
+  @IsEnum(Lang)
+  preferredLanguage?: Lang;
 }

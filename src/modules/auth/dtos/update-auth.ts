@@ -3,6 +3,8 @@ export type UpdateAuth = {
   provider?: string;
   tokenVersion?: number;
 
+  emailChangeRequestedAt?: Date | null;
+
   mfaEnabled?: boolean;
   mfaSecret?: string | null;
   mfaLastVerifiedAt?: Date | null;

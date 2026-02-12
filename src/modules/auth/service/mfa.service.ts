@@ -9,12 +9,16 @@ import { MfaData, ValidateMfa } from '../dtos';
 import { JwtService } from '@nestjs/jwt';
 import { AppError } from '../../../@errors/app-error';
 import { APP_ERRORS } from '../../../@errors';
+import { AUTH_REPOSITORY } from '../tokens';
+import { type IAuthRepository } from '../repository';
 
 @Injectable()
 export class MfaService implements IMfaService {
   constructor(
     @Inject(USER_SERVICE)
     private readonly userService: IUserService,
+    @Inject(AUTH_REPOSITORY)
+    private readonly authRepository: IAuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -28,8 +32,9 @@ export class MfaService implements IMfaService {
     }
 
     const user = await this.userService.findById(tempTokenPayload.sub);
+    const auth = await this.authRepository.findUserAuthData(user.id);
 
-    if (user.mfaEnabled) {
+    if (auth?.mfaEnabled) {
       throw new AppError(APP_ERRORS.MFA_ALREADY_ENABLED);
     }
 
@@ -38,7 +43,7 @@ export class MfaService implements IMfaService {
       length: 32,
     });
 
-    await this.userService.updateUserIntern(user.id, {
+    await this.authRepository.updateAuth(user.id, {
       mfaSecret: secret.base32,
     });
 
@@ -78,17 +83,17 @@ export class MfaService implements IMfaService {
     code: string,
     isActivating = false,
   ): Promise<ValidateMfa> {
-    const user = await this.userService.findById(userId);
+    const auth = await this.authRepository.findUserAuthData(userId);
 
-    if (!isActivating && !user.mfaEnabled) {
+    if (!isActivating && !auth?.mfaEnabled) {
       throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
     }
 
-    if (!user.mfaSecret) {
+    if (!auth?.mfaSecret) {
       throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
     }
 
-    const isValid = this.verifyCode(user.mfaSecret, code);
+    const isValid = this.verifyCode(auth.mfaSecret, code);
 
     if (!isValid) {
       throw new AppError(APP_ERRORS.MFA_INVALID_CODE);
@@ -96,13 +101,13 @@ export class MfaService implements IMfaService {
 
     const mfaLastVerifiedAt = new Date();
 
-    await this.userService.updateUserIntern(userId, {
+    await this.authRepository.updateAuth(userId, {
       mfaLastVerifiedAt,
       ...(isActivating && { mfaEnabled: true }),
     });
 
     const payload = {
-      sub: user.id,
+      sub: userId,
       // to-do: colocar essa regra em algum canto com nome descritivo
       mfaAuthenticatedAt: Math.floor(mfaLastVerifiedAt.getTime() / 1000),
     };
