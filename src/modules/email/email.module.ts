@@ -6,16 +6,27 @@ import {
   EMAIL_JOB_STRATEGIES,
   EMAIL_QUEUE,
   EMAIL_QUEUE_NAME,
+  EMAIL_QUEUE_SERVICE,
+  EMAIL_PROVIDERS,
+  EMAIL_JOB_DISPATCHER,
 } from './tokens';
-import { EmailJobDispatcher, OracleEmailProvider } from './providers';
-import { EmailService, HbsEmailTemplateService } from './service';
+import {
+  EmailJobDispatcher,
+  EmailProviderLoadBalancer,
+  MailgunEmailProvider,
+  OracleEmailProvider,
+} from './providers';
+import {
+  BullMQMailQueueService,
+  EmailService,
+  HbsEmailTemplateService,
+} from './service';
 import {
   SendChangeEmailRequestEmailStrategy,
   SendForgotPasswordStrategy,
   SendNotifyEmailChangedStrategy,
   SendPasswordChangedEmailStrategy,
 } from './strategy';
-import { MailJobStrategy, MailJobStrategyList } from './@types';
 
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
@@ -29,14 +40,20 @@ const exportedProviders: Provider[] = [
     inject: [ConfigService],
     provide: EMAIL_QUEUE,
     useFactory: (configService: ConfigService) => {
-      return new Queue(EMAIL_QUEUE_NAME, {
+      const queue = new Queue(EMAIL_QUEUE_NAME, {
         connection: {
           host: configService.get('REDIS_HOST'),
           port: Number(configService.get<number>('REDIS_PORT')),
           password: configService.get('REDIS_PASSWORD'),
         },
       });
+
+      return queue;
     },
+  },
+  {
+    provide: EMAIL_QUEUE_SERVICE,
+    useClass: BullMQMailQueueService,
   },
 ];
 
@@ -47,13 +64,27 @@ const exportedProviders: Provider[] = [
     SendForgotPasswordStrategy,
     SendNotifyEmailChangedStrategy,
     SendPasswordChangedEmailStrategy,
+    OracleEmailProvider,
+    MailgunEmailProvider,
     {
       provide: EMAIL_PROVIDER,
-      useClass: OracleEmailProvider,
+      useClass: EmailProviderLoadBalancer,
     },
     {
       provide: EMAIL_TEMPLATE_SERVICE,
       useClass: HbsEmailTemplateService,
+    },
+    {
+      provide: EMAIL_JOB_DISPATCHER,
+      useClass: EmailJobDispatcher,
+    },
+    {
+      provide: EMAIL_PROVIDERS,
+      useFactory: (
+        oracle: OracleEmailProvider,
+        mailgun: MailgunEmailProvider,
+      ) => [oracle, mailgun],
+      inject: [OracleEmailProvider, MailgunEmailProvider],
     },
     {
       provide: EMAIL_JOB_STRATEGIES,
@@ -74,12 +105,6 @@ const exportedProviders: Provider[] = [
         SendNotifyEmailChangedStrategy,
         SendPasswordChangedEmailStrategy,
       ],
-    },
-    {
-      provide: EmailJobDispatcher,
-      useFactory: (strategies: MailJobStrategy<MailJobStrategyList>[]) =>
-        new EmailJobDispatcher(strategies),
-      inject: [EMAIL_JOB_STRATEGIES],
     },
     ...exportedProviders,
   ],

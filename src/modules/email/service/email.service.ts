@@ -20,7 +20,8 @@ export class EmailService implements IEmailService {
     private readonly emailProvider: IEmailProvider,
     @Inject(EMAIL_TEMPLATE_SERVICE)
     private readonly emailTemplateService: IEmailTemplateService,
-    @InjectPinoLogger('EmailService') private readonly logger: PinoLogger,
+    @InjectPinoLogger(EmailService.name)
+    private readonly logger: PinoLogger,
     private readonly configService: ConfigService,
   ) {}
 
@@ -49,8 +50,10 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch (e) {
-      console.log('Email error', e);
+    } catch (error) {
+      this.logger.error(
+        '[sendChangeEmailRequestEmail]: Error sending email: ' + error,
+      );
       return false;
     }
   }
@@ -105,7 +108,10 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        '[sendNotifyEmailChangedEmail]: Error sending email: ' + error,
+      );
       return false;
     }
   }
@@ -133,7 +139,10 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        '[sendPasswordChangedEmail]: Error sending email: ' + error,
+      );
       return false;
     }
   }

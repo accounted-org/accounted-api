@@ -7,7 +7,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
-import { EmailJobDispatcher } from './modules/email';
+import { EMAIL_JOB_DISPATCHER, EMAIL_QUEUE_NAME } from './modules/email';
 import { Worker } from 'bullmq';
 import { MailJobStrategyList } from './modules/email/@types';
 
@@ -36,6 +36,7 @@ class Main {
 
     await app.listen(String(process.env.PORT));
 
+    // to-do: mover urls para envs
     logger.log(`API up on http://localhost:${process.env.PORT}`, 'Bootstrap');
     logger.log(
       `Swagger: http://localhost:${process.env.PORT}/${process.env.DOCS_PREFIX}`,
@@ -75,11 +76,10 @@ class Main {
   }
 
   startWorkers(app: INestApplication) {
-    const dispatcher = app.get(EmailJobDispatcher);
+    const dispatcher = app.get(EMAIL_JOB_DISPATCHER);
     new Worker(
-      'mail-queue',
+      EMAIL_QUEUE_NAME,
       async (job) => {
-        console.log(job);
         await dispatcher.dispatch(job.name, job.data as MailJobStrategyList);
       },
       {

@@ -18,7 +18,7 @@ import { AppError } from '../../../@errors/app-error';
 import { AUTH_REPOSITORY, MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
 import { Providers, StringValue, User } from '../../../@types';
-import { EMAIL_SERVICE, type IEmailService } from '../../email';
+import { EMAIL_QUEUE_SERVICE, type IEmailQueueService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { type IAuthRepository } from '../repository';
 import { type IUnitOfWork, UOW_PROVIDER } from '../../unit-of-work';
@@ -34,8 +34,8 @@ export class AuthService implements IAuthService {
     private readonly userService: IUserService,
     @Inject(MFA_SERVICE)
     private readonly mfaService: IMfaService,
-    @Inject(EMAIL_SERVICE)
-    private readonly emaillService: IEmailService,
+    @Inject(EMAIL_QUEUE_SERVICE)
+    private readonly emailQueueService: IEmailQueueService,
     @Inject(AUTH_REPOSITORY)
     private readonly authRepository: IAuthRepository,
     private readonly passwordUtils: PasswordUtils,
@@ -278,7 +278,7 @@ export class AuthService implements IAuthService {
 
       const redefinePasswordLink = `${this.configService.get('FRONT_RESET_PASSWORD_URL')}?token=${redefinePasswordToken}`;
 
-      await this.emaillService.sendForgotPasswordEmail({
+      await this.emailQueueService.enqueueForgotPasswordEmail({
         user,
         resetLink: redefinePasswordLink,
       });
@@ -316,7 +316,7 @@ export class AuthService implements IAuthService {
         true,
       );
 
-      await this.emaillService.sendPasswordChangedEmail({ user });
+      await this.emailQueueService.enqueuePasswordChangedEmail({ user });
     } catch {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
@@ -353,7 +353,7 @@ export class AuthService implements IAuthService {
       true,
     );
 
-    await this.emaillService.sendPasswordChangedEmail({ user });
+    await this.emailQueueService.enqueuePasswordChangedEmail({ user });
   }
 
   async requestUpdateEmail(userId: string, email: string): Promise<void> {
@@ -400,7 +400,7 @@ export class AuthService implements IAuthService {
       },
     );
 
-    await this.emaillService.sendChangeEmailRequestEmail({
+    await this.emailQueueService.enqueueChangeEmailRequestEmail({
       user,
       email,
       expiresIn,
@@ -453,7 +453,7 @@ export class AuthService implements IAuthService {
       await repos.auth.incrementTokenVersion(payload.sub);
     });
 
-    await this.emaillService.sendNotifyEmailChangedEmail({
+    await this.emailQueueService.enqueueNotifyEmailChangedEmail({
       user,
       oldEmail,
       newEmail: payload.newEmail,

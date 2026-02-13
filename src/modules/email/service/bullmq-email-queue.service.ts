@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { IEmailQueueService } from './email-queue.service.interface';
 import { Queue } from 'bullmq';
 import {
@@ -7,10 +7,16 @@ import {
   SendNotifyEmailChangedEmailPayload,
   SendPasswordChangedEmailPayload,
 } from '../@types';
+import { EMAIL_QUEUE } from '../tokens';
 
 @Injectable()
-export class BullMQMailQueueService implements IEmailQueueService {
-  constructor(private readonly queue: Queue) {}
+export class BullMQMailQueueService
+  implements IEmailQueueService, OnModuleDestroy
+{
+  constructor(
+    @Inject(EMAIL_QUEUE)
+    private readonly queue: Queue,
+  ) {}
 
   private async enqueueEmail(jobName: string, payload: any): Promise<void> {
     await this.queue.add(jobName, payload, {
@@ -24,27 +30,31 @@ export class BullMQMailQueueService implements IEmailQueueService {
     });
   }
 
+  async onModuleDestroy() {
+    await this.queue.close();
+  }
+
   async enqueueForgotPasswordEmail(
     payload: SendForgotPasswordEmailPayload,
   ): Promise<void> {
-    await this.enqueueEmail('send-forgot-password', payload);
+    await this.enqueueEmail('send-forgot-password-email', payload);
   }
 
   async enqueueChangeEmailRequestEmail(
     payload: SendChangeEmailRequestEmailPayload,
   ): Promise<void> {
-    await this.enqueueEmail('send-change-email-request', payload);
+    await this.enqueueEmail('send-change-email-request-email', payload);
   }
 
   async enqueueNotifyEmailChangedEmail(
     payload: SendNotifyEmailChangedEmailPayload,
   ): Promise<void> {
-    await this.enqueueEmail('send-notify-email-changed', payload);
+    await this.enqueueEmail('send-notify-email-changed-email', payload);
   }
 
   async enqueuePasswordChangedEmail(
     payload: SendPasswordChangedEmailPayload,
   ): Promise<void> {
-    await this.enqueueEmail('send-password-changed', payload);
+    await this.enqueueEmail('send-password-changed-email', payload);
   }
 }
