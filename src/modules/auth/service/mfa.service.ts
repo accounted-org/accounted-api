@@ -89,6 +89,10 @@ export class MfaService implements IMfaService {
       throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
     }
 
+    if (isActivating && auth?.mfaEnabled) {
+      throw new AppError(APP_ERRORS.MFA_ALREADY_ENABLED);
+    }
+
     if (!auth?.mfaSecret) {
       throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
     }

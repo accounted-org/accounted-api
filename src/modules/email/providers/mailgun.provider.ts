@@ -9,6 +9,7 @@ import { IEmailPayload, IEmailProvider } from './email.provider.interface';
 
 @Injectable()
 export class MailgunEmailProvider implements IEmailProvider {
+  readonly name: string = 'Mailgun Email Provider';
   private readonly mg: Interfaces.IMailgunClient;
   private readonly emailDomain: string;
 
@@ -23,7 +24,7 @@ export class MailgunEmailProvider implements IEmailProvider {
 
   async send(payload: IEmailPayload): Promise<string | undefined> {
     const response = await this.mg.messages.create(this.emailDomain, {
-      from: `No-Reply <no-reply@${this.emailDomain}>`,
+      from: `"Accounted" <no-reply@${this.emailDomain}>`,
       ...payload,
     });
 

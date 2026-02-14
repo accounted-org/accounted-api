@@ -18,5 +18,6 @@ type EmailWithHtml = {
 export type IEmailPayload = IBaseEmailPayload & (EmailWithText | EmailWithHtml);
 
 export interface IEmailProvider {
+  readonly name: string;
   send(payload: IEmailPayload): Promise<string | undefined>;
 }

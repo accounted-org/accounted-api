@@ -4,8 +4,14 @@ import { IEmailService } from './email.service.interface';
 import { EMAIL_PROVIDER, EMAIL_TEMPLATE_SERVICE } from '../tokens';
 import { type IEmailProvider } from '../providers';
 import { type IEmailTemplateService } from './email-template.service.interface';
-import { Lang, User } from '../../../@types';
+import { Lang } from '../../../@types';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import {
+  SendChangeEmailRequestEmailPayload,
+  SendForgotPasswordEmailPayload,
+  SendNotifyEmailChangedEmailPayload,
+  SendPasswordChangedEmailPayload,
+} from '../@types';
 
 @Injectable()
 export class EmailService implements IEmailService {
@@ -14,14 +20,48 @@ export class EmailService implements IEmailService {
     private readonly emailProvider: IEmailProvider,
     @Inject(EMAIL_TEMPLATE_SERVICE)
     private readonly emailTemplateService: IEmailTemplateService,
-    @InjectPinoLogger('EmailService') private readonly logger: PinoLogger,
+    @InjectPinoLogger(EmailService.name)
+    private readonly logger: PinoLogger,
     private readonly configService: ConfigService,
   ) {}
 
-  async sendForgotPasswordEmail(
-    user: User,
-    resetLink: string,
-  ): Promise<boolean> {
+  async sendChangeEmailRequestEmail({
+    user,
+    email,
+    link,
+    expiresIn,
+  }: SendChangeEmailRequestEmailPayload): Promise<boolean> {
+    try {
+      await this.emailProvider.send({
+        to: email,
+        // to-do: mover subject para mapper file
+        subject: 'Solicitação de alteração de e-mail',
+        html: this.emailTemplateService.render(
+          'change-email-request.template',
+          user?.preferredLanguage ?? Lang.PT_BR,
+          {
+            name: user.name,
+            appName: this.configService.get('APP_NAME'),
+            year: new Date().getFullYear(),
+            newEmail: email,
+            link,
+            expiresIn,
+          },
+        ),
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(
+        '[sendChangeEmailRequestEmail]: Error sending email: ' + error,
+      );
+      return false;
+    }
+  }
+
+  async sendForgotPasswordEmail({
+    resetLink,
+    user,
+  }: SendForgotPasswordEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: user.email,
@@ -45,42 +85,11 @@ export class EmailService implements IEmailService {
     }
   }
 
-  async sendChangeEmailRequestEmail(
-    user: User,
-    email: string,
-    link: string,
-    expiresIn: string,
-  ): Promise<boolean> {
-    try {
-      await this.emailProvider.send({
-        to: email,
-        // to-do: mover subject para mapper file
-        subject: 'Solicitação de alteração de e-mail',
-        html: this.emailTemplateService.render(
-          'change-email-request.template',
-          user?.preferredLanguage ?? Lang.PT_BR,
-          {
-            name: user.name,
-            appName: this.configService.get('APP_NAME'),
-            year: new Date().getFullYear(),
-            newEmail: email,
-            link,
-            expiresIn,
-          },
-        ),
-      });
-      return true;
-    } catch (e) {
-      console.log('Email error', e);
-      return false;
-    }
-  }
-
-  async sendNotifyEmailChanged(
-    user: User,
-    oldEmail: string,
-    newEmail: string,
-  ): Promise<boolean> {
+  async sendNotifyEmailChangedEmail({
+    user,
+    oldEmail,
+    newEmail,
+  }: SendNotifyEmailChangedEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: oldEmail,
@@ -99,12 +108,17 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        '[sendNotifyEmailChangedEmail]: Error sending email: ' + error,
+      );
       return false;
     }
   }
 
-  async sendPasswordChangedEmail(user: User): Promise<boolean> {
+  async sendPasswordChangedEmail({
+    user,
+  }: SendPasswordChangedEmailPayload): Promise<boolean> {
     try {
       await this.emailProvider.send({
         to: user.email,
@@ -125,7 +139,10 @@ export class EmailService implements IEmailService {
         ),
       });
       return true;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        '[sendPasswordChangedEmail]: Error sending email: ' + error,
+      );
       return false;
     }
   }

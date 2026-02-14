@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class OracleEmailProvider implements IEmailProvider {
+  readonly name: string = 'Oracle Email Provider';
+
   private transporter: nodemailer.Transporter;
   private readonly emailDomain: string;
 
@@ -23,7 +25,7 @@ export class OracleEmailProvider implements IEmailProvider {
 
   async send(payload: IEmailPayload): Promise<string | undefined> {
     const response = await this.transporter.sendMail({
-      from: `No-Reply <no-reply@${this.emailDomain}>`,
+      from: `"Accounted" <no-reply@${this.emailDomain}>`,
       ...payload,
     });
 
