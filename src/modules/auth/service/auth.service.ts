@@ -17,7 +17,12 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { AUTH_REPOSITORY, MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
-import { Providers, StringValue, User } from '../../../@types';
+import {
+  ESpaceMemberRole,
+  Providers,
+  StringValue,
+  User,
+} from '../../../@types';
 import { EMAIL_QUEUE_SERVICE, type IEmailQueueService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { type IAuthRepository } from '../repository';
@@ -58,6 +63,17 @@ export class AuthService implements IAuthService {
         passwordHash: await this.passwordUtils.hashPassword(dto.password),
       });
 
+      const space = await repos.space.createSpace({
+        name: dto.name,
+        isPersonal: false,
+      });
+
+      await repos.spaceMember.addMember(
+        space.id,
+        user.id,
+        ESpaceMemberRole.OWNER,
+      );
+
       return user;
     });
   }
@@ -76,6 +92,17 @@ export class AuthService implements IAuthService {
         userId: providerUser.id,
         provider,
       });
+
+      const space = await repos.space.createSpace({
+        name: data.name,
+        isPersonal: false,
+      });
+
+      await repos.spaceMember.addMember(
+        space.id,
+        providerUser.id,
+        ESpaceMemberRole.OWNER,
+      );
 
       return providerUser;
     });
