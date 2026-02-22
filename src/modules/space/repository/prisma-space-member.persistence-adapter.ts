@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
 
 import { ISpaceMemberRepository } from './space-member.repository.interface';
 import { SpaceMember } from '../../../@types';
+
+import { Prisma, PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaSpaceMemberPersistenceAdapter implements ISpaceMemberRepository {
@@ -18,6 +19,20 @@ export class PrismaSpaceMemberPersistenceAdapter implements ISpaceMemberReposito
         spaceId,
         memberId,
         role,
+      },
+    });
+  }
+
+  async getMember(
+    spaceId: string,
+    memberId: string,
+  ): Promise<SpaceMember | null> {
+    return await this.prismaService.spaceMember.findUnique({
+      where: {
+        spaceId_memberId: {
+          spaceId,
+          memberId,
+        },
       },
     });
   }

@@ -32,6 +32,7 @@ model User {
   securityEvents SecurityEvent[]
 
   spaceMembers SpaceMember[]
+  spaces       Space[]
 }
 
 model Auth {
@@ -67,7 +68,10 @@ model SecurityEvent {
 }
 
 model Space {
-  id      String @id @default(cuid())
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   name       String
   isPersonal Boolean @default(false)
@@ -80,13 +84,13 @@ model Space {
 
 model SpaceMember {
   id       String @id @default(cuid())
-  spaceId  String 
+  spaceId  String
   memberId String
 
   role String
 
-  member User @relation(fields: [memberId], references: [id], onDelete: Cascade)  
-  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  member User  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  space  Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

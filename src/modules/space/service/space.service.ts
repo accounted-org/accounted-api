@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ISpaceService } from './space.service.interface';
 import { ESpaceMemberRole, Space } from '../../../@types';
-import { CreateSpaceDto } from '../dtos';
+import { CreateSpaceDto, UpdateSpaceDto } from '../dtos';
 import { SPACE_REPOSITORY } from '../tokens';
 import { type ISpaceRepository } from '../repository';
 import { AppError } from '../../../@errors/app-error';
@@ -22,6 +22,7 @@ export class SpaceService implements ISpaceService {
       const space = await repositories.space.createSpace({
         name: data.name,
         isPersonal: false,
+        ownerId: userId,
       });
 
       await repositories.spaceMember.addMember(
@@ -50,7 +51,7 @@ export class SpaceService implements ISpaceService {
     const space = await this.spaceRepository.getMyPersonalSpace(userId);
 
     if (!space) {
-      throw new AppError(APP_ERRORS.PERSONAL_SPACE_NOT_FOUND);
+      throw new AppError(APP_ERRORS.INTERNAL_SERVER_ERROR);
     }
 
     return space;
@@ -70,5 +71,33 @@ export class SpaceService implements ISpaceService {
     }
 
     await this.spaceRepository.deleteSpace(userId, spaceId);
+  }
+
+  async updateSpace(
+    userId: string,
+    spaceId: string,
+    data: UpdateSpaceDto,
+  ): Promise<Space> {
+    const space = await this.getSpace(userId, spaceId);
+
+    if (!space) {
+      throw new AppError(APP_ERRORS.SPACE_NOT_FOUND);
+    }
+
+    if (space.isPersonal) {
+      throw new AppError(APP_ERRORS.UPDATE_PERSONAL_SPACE_NOT_ALLOWED);
+    }
+
+    const updatedSpace = await this.spaceRepository.updateSpace(
+      userId,
+      spaceId,
+      data,
+    );
+
+    if (!updatedSpace) {
+      throw new AppError(APP_ERRORS.INTERNAL_SERVER_ERROR);
+    }
+
+    return updatedSpace;
   }
 }

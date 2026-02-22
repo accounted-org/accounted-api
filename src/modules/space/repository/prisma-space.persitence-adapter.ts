@@ -1,9 +1,11 @@
+import { Injectable } from '@nestjs/common';
 import { ESpaceMemberRole, Space } from '../../../@types';
 import { CreateSpace } from '../dtos';
 import { ISpaceRepository } from './space.repository.interface';
 
 import { Prisma, PrismaClient } from '@prisma/client';
 
+@Injectable()
 export class PrismaSpacePersistenceAdapter implements ISpaceRepository {
   constructor(private prismaService: PrismaClient | Prisma.TransactionClient) {}
 
@@ -12,6 +14,7 @@ export class PrismaSpacePersistenceAdapter implements ISpaceRepository {
       data: {
         name: data.name,
         isPersonal: data.isPersonal,
+        ownerId: data.ownerId,
       },
     });
   }
@@ -43,9 +46,16 @@ export class PrismaSpacePersistenceAdapter implements ISpaceRepository {
     });
   }
 
-  async getSpace(spaceId: string): Promise<Space | null> {
+  async getSpace(userId: string, spaceId: string): Promise<Space | null> {
     return await this.prismaService.space.findUnique({
-      where: { id: spaceId },
+      where: {
+        id: spaceId,
+        spaceMembers: {
+          some: {
+            memberId: userId,
+          },
+        },
+      },
     });
   }
 
@@ -53,7 +63,12 @@ export class PrismaSpacePersistenceAdapter implements ISpaceRepository {
     return await this.prismaService.space.delete({
       where: {
         id: spaceId,
-        ownerId: userId,
+        spaceMembers: {
+          some: {
+            memberId: userId,
+            role: ESpaceMemberRole.OWNER,
+          },
+        },
       },
     });
   }

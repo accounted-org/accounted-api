@@ -32,6 +32,12 @@ export class SignUpDto {
   @IsStrongPassword({ minLength: 8 })
   password: string;
 
+  @ApiProperty({
+    example: 'en',
+    description: 'The preferred language of the user to sign up',
+    enum: Lang,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(Lang)
   preferredLanguage?: Lang;

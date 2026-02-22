@@ -1,5 +1,5 @@
 import { Space } from '../../../@types';
-import { CreateSpaceDto } from '../dtos';
+import { CreateSpaceDto, UpdateSpaceDto } from '../dtos';
 
 export interface ISpaceService {
   createSpace(userId: string, data: CreateSpaceDto): Promise<Space>;
@@ -8,4 +8,9 @@ export interface ISpaceService {
   getMyPersonalSpace(userId: string): Promise<Space>;
   listMySpaces(userId: string): Promise<Space[]>;
   deleteSpace(userId: string, spaceId: string): Promise<void>;
+  updateSpace(
+    userId: string,
+    spaceId: string,
+    data: UpdateSpaceDto,
+  ): Promise<Space>;
 }

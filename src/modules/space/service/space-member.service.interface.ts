@@ -1,7 +1,16 @@
 import { SpaceMember } from '../../../@types';
 
 export interface ISpaceMemberService {
-  getSpaceMembers(spaceId: string): Promise<SpaceMember[]>;
-  addSpaceMember(spaceId: string, memberId: string): Promise<SpaceMember>;
-  removeSpaceMember(spaceId: string, memberId: string): Promise<void>;
+  listSpaceMembers(spaceId: string): Promise<SpaceMember[]>;
+  getSpaceMember(spaceId: string, memberId: string): Promise<SpaceMember>;
+  addSpaceMember(
+    userId: string,
+    spaceId: string,
+    memberId: string,
+  ): Promise<SpaceMember>;
+  removeSpaceMember(
+    userId: string,
+    spaceId: string,
+    memberId: string,
+  ): Promise<void>;
 }

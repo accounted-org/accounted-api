@@ -59,7 +59,17 @@ export class MfaService implements IMfaService {
     };
   }
 
-  async enableMfa(tempToken: string, code: string): Promise<boolean> {
+  /**
+   * Enable flow - must be called once the user has registered the MFA data in their authenticator app and is ready to activate MFA in their account
+   * @param userId logged user id
+   * @param code app generated token
+   * @returns success
+   */
+  async verifyMfa(
+    tempToken: string,
+    code: string,
+    isActivating = false,
+  ): Promise<ValidateMfa> {
     const tempTokenPayload: { sub: string; mfaPending: boolean } =
       await this.jwtService.verifyAsync(tempToken);
 
@@ -67,47 +77,15 @@ export class MfaService implements IMfaService {
       throw new AppError(APP_ERRORS.INVALID_CREDENTIALS);
     }
 
-    await this.validateMfa(tempTokenPayload.sub, code, true);
+    const { sub: userId } = tempTokenPayload;
 
-    return true;
-  }
-
-  /**
-   * Login flow
-   * @param userId logged user id
-   * @param code app generated token
-   * @returns success
-   */
-  async validateMfa(
-    userId: string,
-    code: string,
-    isActivating = false,
-  ): Promise<ValidateMfa> {
-    const auth = await this.authRepository.findUserAuthData(userId);
-
-    if (!isActivating && !auth?.mfaEnabled) {
-      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
-    }
-
-    if (isActivating && auth?.mfaEnabled) {
-      throw new AppError(APP_ERRORS.MFA_ALREADY_ENABLED);
-    }
-
-    if (!auth?.mfaSecret) {
-      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
-    }
-
-    const isValid = this.verifyCode(auth.mfaSecret, code);
-
-    if (!isValid) {
-      throw new AppError(APP_ERRORS.MFA_INVALID_CODE);
-    }
+    await this.validateMfaFlow(userId, code, isActivating);
 
     const mfaLastVerifiedAt = new Date();
 
     await this.authRepository.updateAuth(userId, {
       mfaLastVerifiedAt,
-      ...(isActivating && { mfaEnabled: true }),
+      ...(isActivating ? { mfaEnabled: true } : {}),
     });
 
     const payload = {
@@ -126,6 +104,38 @@ export class MfaService implements IMfaService {
       mfaLastVerifiedAt,
       accessToken,
     };
+  }
+
+  async revalidateMfa(userId: string, code: string): Promise<boolean> {
+    return await this.validateMfaFlow(userId, code);
+  }
+
+  private async validateMfaFlow(
+    userId: string,
+    code: string,
+    isActivating = false,
+  ): Promise<boolean> {
+    const auth = await this.authRepository.findUserAuthData(userId);
+
+    if (!isActivating && !auth?.mfaEnabled) {
+      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
+    }
+
+    if (isActivating && auth?.mfaEnabled) {
+      throw new AppError(APP_ERRORS.MFA_ALREADY_ENABLED);
+    }
+
+    if (!auth?.mfaSecret) {
+      throw new AppError(APP_ERRORS.MFA_NOT_ENABLED);
+    }
+
+    const isValidCode = this.verifyCode(auth.mfaSecret, code);
+
+    if (!isValidCode) {
+      throw new AppError(APP_ERRORS.MFA_INVALID_CODE);
+    }
+
+    return true;
   }
 
   private verifyCode(secret: string, token: string): boolean {
