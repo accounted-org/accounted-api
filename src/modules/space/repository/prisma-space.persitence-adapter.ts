@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ESpaceMemberRole, Space } from '../../../@types';
-import { CreateSpace } from '../dtos';
+import { CreateSpace, UpdateSpace } from '../dtos';
 import { ISpaceRepository } from './space.repository.interface';
 
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -70,6 +70,25 @@ export class PrismaSpacePersistenceAdapter implements ISpaceRepository {
           },
         },
       },
+    });
+  }
+
+  async updateSpace(
+    userId: string,
+    spaceId: string,
+    data: UpdateSpace,
+  ): Promise<Space | null> {
+    return await this.prismaService.space.update({
+      where: {
+        id: spaceId,
+        spaceMembers: {
+          some: {
+            memberId: userId,
+            role: ESpaceMemberRole.OWNER,
+          },
+        },
+      },
+      data,
     });
   }
 }
