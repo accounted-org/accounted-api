@@ -9,7 +9,7 @@ import {
   Patch,
   Req,
 } from '@nestjs/common';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
 import { USER_SERVICE } from '../tokens';
 import { type IUserService } from '../service';
 import type { Request } from '../../../@types';
@@ -38,12 +38,20 @@ export class UserController {
     status: HttpStatus.OK,
     description: 'Update data of a user',
   })
+  @ApiBody({
+    description: 'Data to update of the user',
+    type: UpdateUserDto,
+  })
   async updateUser(@Req() req: Request, @Body() body: UpdateUserDto) {
     return await this.userService.updateUser(req.user.sub, body);
   }
 
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Delete user account',
+  })
   async deleteUser(@Req() req: Request) {
     return await this.userService.deleteUser(req.user.sub);
   }

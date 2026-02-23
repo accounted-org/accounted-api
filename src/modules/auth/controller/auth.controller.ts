@@ -51,6 +51,7 @@ export class AuthController {
 
   @Public()
   @SkipMfaSession()
+  @UseGuards(GuestGuard)
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
   @ApiResponse({

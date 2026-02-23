@@ -4,6 +4,10 @@ import { PrismaService } from '../../prisma';
 import { PrismaUserPersistenceAdapter } from '../../user/repository';
 import { PrismaAuthPersistenceAdapter } from '../../auth/repository';
 import { PrismaSecurityEventPersistenceAdapter } from '../../security-event';
+import {
+  PrismaSpaceMemberPersistenceAdapter,
+  PrismaSpacePersistenceAdapter,
+} from '../../space/repository';
 
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
@@ -17,6 +21,8 @@ export class PrismaUnitOfWork implements IUnitOfWork {
         users: new PrismaUserPersistenceAdapter(tx),
         auth: new PrismaAuthPersistenceAdapter(tx),
         securityEvents: new PrismaSecurityEventPersistenceAdapter(tx),
+        space: new PrismaSpacePersistenceAdapter(tx),
+        spaceMember: new PrismaSpaceMemberPersistenceAdapter(tx),
       };
 
       return work(repositories);

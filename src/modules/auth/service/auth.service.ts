@@ -17,7 +17,12 @@ import { APP_ERRORS } from '../../../@errors';
 import { AppError } from '../../../@errors/app-error';
 import { AUTH_REPOSITORY, MFA_SERVICE } from '../tokens';
 import { type IMfaService } from './mfa.service.interface';
-import { Providers, StringValue, User } from '../../../@types';
+import {
+  ESpaceMemberRole,
+  Providers,
+  StringValue,
+  User,
+} from '../../../@types';
 import { EMAIL_QUEUE_SERVICE, type IEmailQueueService } from '../../email';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { type IAuthRepository } from '../repository';
@@ -47,6 +52,12 @@ export class AuthService implements IAuthService {
 
   async createUser(dto: SignUpDto): Promise<User> {
     return await this.uow.execute(async (repos) => {
+      const userAlreadyExists = await repos.users.findByEmail(dto.email);
+
+      if (userAlreadyExists) {
+        throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
+      }
+
       const user = await repos.users.create({
         email: dto.email,
         name: dto.name,
@@ -58,6 +69,18 @@ export class AuthService implements IAuthService {
         passwordHash: await this.passwordUtils.hashPassword(dto.password),
       });
 
+      const space = await repos.space.createSpace({
+        name: dto.name,
+        isPersonal: true,
+        ownerId: user.id,
+      });
+
+      await repos.spaceMember.addMember(
+        space.id,
+        user.id,
+        ESpaceMemberRole.OWNER,
+      );
+
       return user;
     });
   }
@@ -67,6 +90,12 @@ export class AuthService implements IAuthService {
     provider: string,
   ): Promise<User> {
     return await this.uow.execute(async (repos) => {
+      const userAlreadyExists = await repos.users.findByEmail(data.email);
+
+      if (userAlreadyExists) {
+        throw new AppError(APP_ERRORS.EMAIL_ALREADY_REGISTERED);
+      }
+
       const providerUser = await repos.users.create({
         email: data.email,
         name: data.name,
@@ -76,6 +105,18 @@ export class AuthService implements IAuthService {
         userId: providerUser.id,
         provider,
       });
+
+      const space = await repos.space.createSpace({
+        name: data.name,
+        isPersonal: true,
+        ownerId: providerUser.id,
+      });
+
+      await repos.spaceMember.addMember(
+        space.id,
+        providerUser.id,
+        ESpaceMemberRole.OWNER,
+      );
 
       return providerUser;
     });
@@ -185,8 +226,8 @@ export class AuthService implements IAuthService {
 
     const auth = await this.findAuthData(user.id);
 
-    const { accessToken } = await this.mfaService.validateMfa(
-      tempTokenPayload.sub,
+    const { accessToken } = await this.mfaService.verifyMfa(
+      dto.tempToken,
       dto.code,
     );
 

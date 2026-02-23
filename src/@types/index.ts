@@ -6,3 +6,4 @@ export * from './request';
 export * from './providers';
 export * from './enum';
 export * from './security-event';
+export * from './space';
