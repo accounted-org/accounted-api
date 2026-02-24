@@ -1,0 +1,69 @@
+model Plan {
+  id    String @id @default(cuid())
+  name  String
+  code  String @unique // fre, pro, enterprise
+  price Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  planFeatures PlanFeature[]
+  planLimits   PlanLimit[]
+  planPrices   PlanPrice[]
+}
+
+model Feature {
+  id          String @id @default(cuid())
+  key         String @unique
+  description String
+
+  planFeatures PlanFeature[]
+}
+
+model PlanFeature {
+  id        String @id @default(cuid())
+  planId    String
+  featureId String
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, featureId])
+}
+
+model PlanLimit {
+  id     String @id @default(cuid())
+  planId String
+  key    String
+  value  Int
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, key])
+}
+
+model PlanPrice {
+  id     String @id @default(cuid())
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  countryCode String
+  currency    String
+  multiplier  Int    @default(1) // para casos onde o preço é multiplicado por um fator (ex: 100 para converter de dólares para centavos)
+  price       Float
+
+  interval BillingInterval
+
+  @@unique([planId, countryCode, interval])
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}

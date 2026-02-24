@@ -1,0 +1,19 @@
+model Auth {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider     String
+  passwordHash String?
+  tokenVersion Int     @default(0)
+
+  // alterar depois pra model especifico
+  emailChangeRequestedAt DateTime?
+
+  mfaEnabled        Boolean   @default(false)
+  mfaSecret         String?
+  mfaLastVerifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
