@@ -5,6 +5,7 @@ import { MFA_ERRORS } from './mfa.errors';
 import { SYS_ERRORS } from './sys.errors';
 import { VALIDATION_ERRORS } from './validation.errors';
 import { SPACE_ERRORS } from './space.errors';
+import { PLAN_ERRORS } from './plan.errors';
 
 export const APP_ERRORS = {
   ...USER_ERRORS,
@@ -14,4 +15,5 @@ export const APP_ERRORS = {
   ...AUTH_ERRORS,
   ...VALIDATION_ERRORS,
   ...SPACE_ERRORS,
+  ...PLAN_ERRORS,
 } as const;

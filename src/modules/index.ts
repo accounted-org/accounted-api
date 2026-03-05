@@ -6,3 +6,4 @@ export { UtilsModule } from './utils';
 export { UnitOfWorkModule } from './unit-of-work';
 export { SecurityEventModule } from './security-event';
 export { SpaceModule } from './space';
+export { PlanModule } from './plan';

@@ -8,6 +8,7 @@ import {
   UnitOfWorkModule,
   SecurityEventModule,
   SpaceModule,
+  PlanModule,
 } from './modules';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -44,6 +45,7 @@ import { RecentMfaGuard } from './modules/auth/guards/recent-mfa.guard';
     MetricsModule,
     LogsModule,
     SpaceModule,
+    PlanModule,
   ],
   controllers: [],
   providers: [

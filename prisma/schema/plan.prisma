@@ -1,23 +1,46 @@
 model Plan {
-  id    String @id @default(cuid())
-  name  String
-  code  String @unique // fre, pro, enterprise
-  price Float
+  id           String  @id @default(cuid())
+  code         String  @unique
+  promoTextKey String?
+
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  planFeatures PlanFeature[]
-  planLimits   PlanLimit[]
-  planPrices   PlanPrice[]
+  prices   PlanPrice[]
+  features PlanFeature[]
+}
+
+model PlanPrice {
+  id              String @id @default(cuid())
+  planId          String
+  countryCode     String
+  currency        String
+  price           Int
+  discountPercent Int    @default(0)
+
+  isActive Boolean @default(true)
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, countryCode])
 }
 
 model Feature {
-  id          String @id @default(cuid())
-  key         String @unique
-  description String
+  id  String @id @default(cuid())
+  key String @unique
 
-  planFeatures PlanFeature[]
+  name        String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plans PlanFeature[]
 }
 
 model PlanFeature {
@@ -32,38 +55,4 @@ model PlanFeature {
   updatedAt DateTime @updatedAt
 
   @@unique([planId, featureId])
-}
-
-model PlanLimit {
-  id     String @id @default(cuid())
-  planId String
-  key    String
-  value  Int
-
-  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([planId, key])
-}
-
-model PlanPrice {
-  id     String @id @default(cuid())
-  planId String
-  plan   Plan   @relation(fields: [planId], references: [id])
-
-  countryCode String
-  currency    String
-  multiplier  Int    @default(1) // para casos onde o preço é multiplicado por um fator (ex: 100 para converter de dólares para centavos)
-  price       Float
-
-  interval BillingInterval
-
-  @@unique([planId, countryCode, interval])
-}
-
-enum BillingInterval {
-  MONTHLY
-  YEARLY
 }
